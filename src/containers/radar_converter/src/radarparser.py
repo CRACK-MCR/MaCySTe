@@ -1,0 +1,15 @@
+import argparse, os, ipaddress
+
+natsRadarParser = argparse.ArgumentParser()
+natsRadarParser.add_argument('--base-topic', default = os.environ.get('BASE_TOPIC', 'radar'), help = 'Base topic to use for NATS')
+natsRadarParser.add_argument('--nats-url', default = os.environ.get('NATS_URL', 'nats://localhost:4222'), help = 'URL for connecting to NATS')
+natsRadarParser.add_argument('--verbose', default = bool(os.environ.get('VERBOSE', False)), action = 'store_true', help = 'Enable verbose logging')
+natsRadarParser.add_argument('--broadcast', default = os.environ.get('IMAGE_BROADCAST', False), action = 'store_true', help = 'Set socket in broadcast mode')
+natsRadarParser.add_argument('--multicast-loop', default = os.environ.get('IMAGE_MULTICAST_LOOP', False), action = 'store_true', help = 'Set socket IP_MULTICAST_LOOP option')
+natsRadarParser.add_argument('--multicast-ttl', default = os.environ.get('IMAGE_MULTICAST_TTL', 1), help = 'Set socket IP_MULTICAST_TTL option')
+natsRadarParser.add_argument('--multicast-if', default = os.environ.get('IMAGE_MULTICAST_IF', None) ,help = 'Set socket IP_MULTICAST_IF option', type = ipaddress.ip_address)
+natsRadarParser.add_argument('--bind-interface', default = os.environ.get('BIND_INTERFACE', '0.0.0.0'), help = 'IP where receiving multicast')
+natsRadarParser.add_argument('--buffer-size', default = os.environ.get('BUFFER_SIZE', 10), help = 'Buffer size to use', type = int)
+natsRadarParser.add_argument('--protocol', default = os.environ.get('PROTOCOL', 'NAVICO'), help = 'Protocol: ASTERIX or NAVICO')
+natsRadarParser.add_argument('--asterix-port', default = os.environ.get('ASTERIX_PORT', 42069), help = 'ASTERIX destination port')
+natsRadarParser.add_argument('--asterix-address', default = os.environ.get('ASTERIX_ADDRESS', '127.0.0.1'), help = 'ASTERIX destination address')

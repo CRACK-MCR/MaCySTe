@@ -1,0 +1,2 @@
+      env:
+      - { name: STEERING_GEAR_SERIAL_IP, value: ${steering_gear_physics_pod_steering_gear_physics_eth0_ip} }

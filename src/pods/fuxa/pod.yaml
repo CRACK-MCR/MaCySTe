@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-fuxa-${hmi_name}
+spec:
+  volumes:
+    - name: appdata
+      hostPath:
+        path: ${STATE_DIR}/fuxa/${hmi_name}/appdata
+        type: Directory
+    - name: database
+      hostPath:
+        path: ${STATE_DIR}/fuxa/${hmi_name}/db
+        type: Directory
+    - name: project
+      hostPath:
+        path: ${CONFIG_DIR}/fuxa/${hmi_name}/fuxa-project.json
+        type: File
+  containers:
+    - name: fuxa
+      image: ${fuxa_image}
+      volumeMounts:
+      - { name: appdata, mountPath: /usr/src/app/FUXA/server/_appdata }
+      - { name: database, mountPath: /usr/src/app/FUXA/server/_db }
+    - name: init
+      image: ${fuxa_init_image}
+      volumeMounts:
+      - { name: project, mountPath: /etc/fuxa-project.json }

@@ -1,0 +1,185 @@
+From 6a5d50d89823befe4069f8560401e8da22da74c5 Mon Sep 17 00:00:00 2001
+From: Giacomo Longo <gabibbo97@gmail.com>
+Date: Fri, 16 Dec 2022 13:13:54 +0100
+Subject: [PATCH 08/10] Rudder values from NATS
+
+---
+ src/CMakeLists.txt |  1 +
+ src/NatsRudder.cpp | 86 ++++++++++++++++++++++++++++++++++++++++++++++
+ src/NatsRudder.hpp | 25 ++++++++++++++
+ src/main.cpp       |  6 ++++
+ 4 files changed, 118 insertions(+)
+ create mode 100644 src/NatsRudder.cpp
+ create mode 100644 src/NatsRudder.hpp
+
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 5e8bd37a..fef6a8b0 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -64,6 +64,7 @@ set(BC_SOURCES
+     MyEventReceiver.cpp
+     NMEA.cpp
+     NatsRadarCommand.cpp
++    NatsRudder.cpp
+     NavLight.cpp
+     Network.cpp
+     NetworkPrimary.cpp
+diff --git a/src/NatsRudder.cpp b/src/NatsRudder.cpp
+new file mode 100644
+index 00000000..9bca7e17
+--- /dev/null
++++ b/src/NatsRudder.cpp
+@@ -0,0 +1,86 @@
++#include "NatsRudder.hpp"
++#include <iostream>
++
++NatsRudder *pointer;
++
++void onMsg(natsConnection *nc, natsSubscription *sub, natsMsg *msg, void *closure)
++{
++    // Prints the message, using the message getters:
++    std::string nats_topic(natsMsg_GetSubject(msg));
++    std::string nats_data(natsMsg_GetData(msg));
++
++    if(nats_topic.compare(pointer->rudderSentece) == 0) {
++        float value = 0.0;
++        try{
++            value = std::stof(nats_data);
++        } catch (...){
++            std::cout << "ERROR in receiving RUDDER from NATS" << std::endl;
++        }
++        pointer->rudder = value;
++    } else if (nats_topic.compare(pointer->pump1OnSentence) == 0) {
++        bool value = false;
++        try{
++            value = nats_data.compare("True") == 0;
++        } catch(...){
++            std::cout << "ERROR in receiving PUMP1ON from NATS" << std::endl;
++        }
++        pointer->pump1on = value;
++    } else if (nats_topic.compare(pointer->pump2OnSentence) == 0) {
++        bool value = false;
++        try{
++            value = nats_data.compare("True") == 0;
++        } catch(...){
++            std::cout << "ERROR in receiving PUMP2ON from NATS" << std::endl;
++        }
++        pointer->pump2on = value;
++    } else if (nats_topic.compare(pointer->alarm1Sentence) == 0) {
++        bool value = false;
++        try{
++            value = nats_data.compare("True") == 0;
++        } catch(...){
++            std::cout << "ERROR in receiving ALARM1ON from NATS" << std::endl;
++        }
++        pointer->pump1alarm = value;
++    } else if (nats_topic.compare(pointer->alarm2Sentence) == 0) {
++        bool value = false;
++        try{
++            value = nats_data.compare("True") == 0;
++        } catch(...){
++            std::cout << "ERROR in receiving ALARM2ON from NATS" << std::endl;
++        }
++        pointer->pump2alarm = value;
++    }
++
++
++    // Don't forget to destroy the message!
++    natsMsg_Destroy(msg);
++}
++
++NatsRudder::NatsRudder(natsConnection *conn) {
++    pointer = this;
++    rudder = 0.0;
++    pump1on = true;
++    pump2on = false;
++    pump1alarm = false;
++    pump2alarm = false;
++
++    nc = conn;
++
++    natsTopic = std::getenv("NATS_RUDDER_SENDER");
++    if (natsTopic == NULL) {
++        std::cout << "ERROR: NO NATS_RUDDER_SENDER PASSED, USING DEV" << std::endl;
++        natsTopic = "physics";
++    }
++
++    rudderSentece = std::string{ natsTopic } + ".RUDDER";
++    alarm1Sentence = std::string{ natsTopic } + ".ALARM1";
++    alarm2Sentence = std::string{ natsTopic } + ".ALARM2";
++    pump1OnSentence = std::string{ natsTopic } + ".PUMP1";
++    pump2OnSentence = std::string{ natsTopic } + ".PUMP2";
++
++    const char* natsGeneralTopic = (std::string{ natsTopic } + ".*").c_str();
++
++    s = natsConnection_Subscribe(&sub, nc, natsGeneralTopic, onMsg, NULL);
++
++    std::cout << "NATS: SUBSCRIBED TO: " << natsGeneralTopic << std::endl;
++}
+\ No newline at end of file
+diff --git a/src/NatsRudder.hpp b/src/NatsRudder.hpp
+new file mode 100644
+index 00000000..05153023
+--- /dev/null
++++ b/src/NatsRudder.hpp
+@@ -0,0 +1,25 @@
++#include "nats/nats.h"
++#include <string.h>
++#include <string>
++
++class NatsRudder
++{
++    public:
++        NatsRudder(natsConnection *conn);
++
++        float rudder;
++        bool pump1alarm;
++        bool pump2alarm;
++        bool pump1on;
++        bool pump2on;
++        natsConnection *nc  = NULL;
++        natsSubscription *sub = NULL;
++        natsMsg *msg = NULL;
++        natsStatus s;
++        const char* natsTopic;
++        std::string rudderSentece;
++        std::string alarm1Sentence;
++        std::string alarm2Sentence;
++        std::string pump1OnSentence;
++        std::string pump2OnSentence;
++};
+\ No newline at end of file
+diff --git a/src/main.cpp b/src/main.cpp
+index fa9598d5..f0e4ecc9 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -43,6 +43,7 @@
+ // NATS
+ #include "nats/nats.h"
+ #include "NatsRadarCommand.hpp"
++#include "NatsRudder.hpp"
+ 
+ #include <cstdlib> //For rand(), srand()
+ #include <vector>
+@@ -804,6 +805,7 @@ int main(int argc, char ** argv)
+         std::cout << "ERROR IN CONNECTING TO " << natsURL << std::endl;
+ 
+     NatsRadarCommand radarCommand(nc, &model);
++    NatsRudder rudder(nc);
+ 
+     //Load the gui
+     bool hideEngineAndRudder=false;
+@@ -884,6 +886,10 @@ int main(int argc, char ** argv)
+         network->update();
+ //        networkProfile.toc();
+ 
++        model.setRudder((irr::f32)rudder.rudder);
++        model.setRudderPumpState(1, rudder.pump1on);
++        model.setRudderPumpState(2, rudder.pump2on);
++
+         // Update NMEA, check if new sensor or AIS data is ready to be sent
+ //        nmeaProfile.tic();
+         }{ IPROF("NMEA");
+-- 
+2.39.0
+

@@ -1,0 +1,2 @@
+FROM docker.io/frangoteam/fuxa:1.1.10
+RUN npm install modbus-serial

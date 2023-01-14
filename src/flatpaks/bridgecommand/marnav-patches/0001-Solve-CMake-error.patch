@@ -1,0 +1,24 @@
+From 0d74077b6788f4152889fd71118fb11308f17d33 Mon Sep 17 00:00:00 2001
+From: Giacomo Longo <gabibbo97@gmail.com>
+Date: Wed, 21 Dec 2022 22:20:56 +0100
+Subject: [PATCH] Solve CMake error with missing documentation dependency
+
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7aa597f..208b596 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -37,7 +37,7 @@ endif()
+ 
+ # misc
+ include(RepoInformation)
+-include(Documentation)
++#include(Documentation)
+ include(CppCheck)
+ include(ExternalProject)
+ 
+-- 
+2.39.0

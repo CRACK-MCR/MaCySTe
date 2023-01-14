@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-${pod_name}
+spec:
+  containers:
+    - name: modbus-nats-kv
+      image: ${modbus_nats_kv_image}
+      args:
+      - client
+      env:
+      - { name: MODBUS_HOST, value: ${modbus_host} }
+      - { name: MODBUS_PORT, value: ${modbus_nats_kv_client_modbus_port} }
+      - { name: NATS_URL, value: ${nats_url} }
+      - { name: NATS_BUCKET, value: ${nats_bucket} }
+      - { name: NATS_KEY, value: ${nats_key} }
+      - { name: DEFAULT_VALUE, value: ${modbus_nats_kv_client_default_value} }
+      - { name: VALUE_MULTIPLIER, value: ${value_multiplier} }
+      - { name: OPENPLC_COMPATIBLE, value: ${openplc_compatible} }
+      - { name: MODBUS_HOLDING_REGISTER, value: ${modbus_holding_register} }
+      - { name: ONLY_ON_VALUE_CHANGE, value: ${modbus_nats_kv_client_only_on_value_change} }
+

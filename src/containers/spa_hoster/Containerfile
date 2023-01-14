@@ -1,0 +1,13 @@
+ARG RUST_IMAGE
+FROM ${RUST_IMAGE}
+
+COPY . /usr/src/spa-hoster
+
+WORKDIR /usr/src/spa-hoster
+RUN \
+  --mount=type=cache,dst=/root/.cargo \
+  --mount=type=cache,dst=/usr/src/spa-hoster/target \
+  cargo install --path .
+
+WORKDIR /srv
+CMD [ "spa-hoster" ]

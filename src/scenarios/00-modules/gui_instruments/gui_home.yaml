@@ -1,0 +1,2 @@
+      - { name: MENU_INSTRUMENTS_TEXT, value: "Ship controls" }
+      - { name: MENU_INSTRUMENTS_URL, value: "http://${gui_instruments_pod_gui_instruments_mgmt0_ip}:3000" }

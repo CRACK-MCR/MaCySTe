@@ -1,0 +1,6 @@
+satellite_router_pod_mini_router_extra_vars += \
+	forward_interfaces \
+	snat_interface
+
+satellite_router_pod_mini_router_extra_var_forward_interfaces = eth0
+satellite_router_pod_mini_router_extra_var_snat_interface = eth1

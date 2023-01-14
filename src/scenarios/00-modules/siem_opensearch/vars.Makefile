@@ -1,0 +1,1 @@
+siem_opensearch_pod_siem_opensearch_extra_vars +=

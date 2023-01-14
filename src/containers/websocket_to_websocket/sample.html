@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>ws2ws sample</title>
+  <script>
+let ws_port = 3000;
+document.addEventListener('DOMContentLoaded', _ => {
+  const clients = document.getElementById('clients')
+  const form = document.getElementById('client-form')
+  const input = document.getElementById('topic-input')
+  form.addEventListener('submit', event => {
+    event.preventDefault()
+    const topic = input.value
+    console.debug('Adding client for topic', topic)
+
+    const client = document.createElement('div')
+
+    const clientForm = document.createElement('form')
+    client.appendChild(clientForm)
+
+    const clientFormLabel = document.createElement('label')
+    clientFormLabel.textContent = topic
+    clientForm.appendChild(clientFormLabel)
+
+    const clientFormText = document.createElement('input')
+    clientFormText.placeholder = 'text to send'
+    clientFormText.name = 'text'
+    clientForm.appendChild(clientFormText)
+
+    const clientFormSend = document.createElement('input')
+    clientFormSend.type = 'submit'
+    clientFormSend.name = 'send'
+    clientFormSend.value = 'Send'
+    clientForm.appendChild(clientFormSend)
+
+    const clientFormClose = document.createElement('input')
+    clientFormClose.type = 'submit'
+    clientFormClose.name = 'close'
+    clientFormClose.value = 'X'
+    clientForm.appendChild(clientFormClose)
+
+    const clientFormMess = document.createElement('span')
+    clientForm.appendChild(clientFormMess)
+
+    const clientWS = new WebSocket(`ws://127.0.0.1:${ws_port}/${topic}`)
+    clientWS.onopen = _ => console.debug('WebSocket opened', clientWS.url)
+    clientWS.onmessage = m => {
+      console.debug('WebSocket message', m)
+      clientFormMess.textContent = m.data
+    }
+    clientWS.onclose = _ => console.debug('WebSocket closed')
+    clientWS.onerror = _ => console.debug('WebSocket error')
+
+    clientForm.onsubmit = event => {
+      event.preventDefault()
+      const text = clientFormText.value
+      clientWS.send(text)
+      console.debug('Sent', text)
+    }
+
+    clientFormClose.onclick = event => {
+      event.preventDefault()
+      clientWS.close()
+      clients.removeChild(client)
+    }
+
+    clients.append(client)
+  })
+})
+  </script>
+</head>
+<body>
+  <h1>WS 2 WS sample</h1>
+  <form id="client-form">
+    <label for="topic-input">Topic</label>
+    <input id="topic-input" type="text" name="topic" placeholder="topic" required/>
+
+    <input type="submit" value="Add client"/>
+  </form>
+  <div id="clients"></div>
+</body>
+</html>

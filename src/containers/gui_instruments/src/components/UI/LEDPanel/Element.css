@@ -1,0 +1,27 @@
+.on, .off, .flashing {
+  transition: border, color;
+  transition-duration: 0.3s;
+}
+
+.off {
+  filter: grayscale(100%) brightness(10) brightness(0.2);
+  transition: filter;
+  transition-duration: 0.3s;
+}
+
+@keyframes flashing {
+  from {
+    filter: brightness(1.0);
+  }
+  to {
+    filter: grayscale(100%) brightness(10) brightness(0.2);
+  }
+}
+
+.flashing {
+  animation-name: flashing;
+  animation-duration: 0.5s;
+  animation-direction: alternate;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+}

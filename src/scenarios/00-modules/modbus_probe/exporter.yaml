@@ -1,0 +1,7 @@
+    # SIEM addon
+    - name: exporter
+      image: ${modbus_probe_image}
+      securityContext:
+        privileged: true
+      env:
+      - { name: OPENSEARCH_URL, value: "https://${siem_opensearch_pod_opensearch_eth0_ip}:9200" }

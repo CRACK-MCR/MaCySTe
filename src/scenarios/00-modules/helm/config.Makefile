@@ -1,0 +1,5 @@
+helm_pods += modbus_nats_kv_client
+
+helm_pod_modbus_nats_kv_client_network_interfaces += eth0 nats0
+helm_pod_modbus_nats_kv_client_eth0_network = CONTROL
+helm_pod_modbus_nats_kv_client_nats0_network = NATS

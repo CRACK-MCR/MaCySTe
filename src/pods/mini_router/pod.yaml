@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-mini-router
+spec:
+  containers:
+  - name: router
+    image: ${mini_router_image}
+    args:
+    - router
+    securityContext:
+      capabilities:
+        add:
+          - NET_ADMIN
+      sysctls:
+        - { name: net.ipv4.ip_forward, value: '1' }
+    env:
+    - { name: FORWARD_INTERFACES, value: "${forward_interfaces}" }
+    - { name: SNAT_INTERFACE, value: "${snat_interface}" }

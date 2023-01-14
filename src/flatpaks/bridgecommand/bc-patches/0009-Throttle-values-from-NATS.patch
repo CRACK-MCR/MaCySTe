@@ -1,0 +1,146 @@
+From 752da0a47d45987cbf3b7b7ba7d62dc34a8b0cb9 Mon Sep 17 00:00:00 2001
+From: Giacomo Longo <gabibbo97@gmail.com>
+Date: Wed, 28 Dec 2022 17:29:15 +0100
+Subject: [PATCH 09/10] Throttle values from NATS
+
+---
+ src/CMakeLists.txt   |  1 +
+ src/NatsThrottle.cpp | 55 ++++++++++++++++++++++++++++++++++++++++++++
+ src/NatsThrottle.hpp | 19 +++++++++++++++
+ src/main.cpp         |  4 ++++
+ 4 files changed, 79 insertions(+)
+ create mode 100644 src/NatsThrottle.cpp
+ create mode 100644 src/NatsThrottle.hpp
+
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index fef6a8b0..6d7eb50c 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -65,6 +65,7 @@ set(BC_SOURCES
+     NMEA.cpp
+     NatsRadarCommand.cpp
+     NatsRudder.cpp
++    NatsThrottle.cpp
+     NavLight.cpp
+     Network.cpp
+     NetworkPrimary.cpp
+diff --git a/src/NatsThrottle.cpp b/src/NatsThrottle.cpp
+new file mode 100644
+index 00000000..1a10e04d
+--- /dev/null
++++ b/src/NatsThrottle.cpp
+@@ -0,0 +1,55 @@
++#include "NatsThrottle.hpp"
++#include <iostream>
++
++static NatsThrottle *pointer;
++
++static void onMsg(natsConnection *nc, natsSubscription *sub, natsMsg *msg, void *closure)
++{
++    // Prints the message, using the message getters:
++    std::string nats_topic(natsMsg_GetSubject(msg));
++    std::string nats_data(natsMsg_GetData(msg));
++
++    if(nats_topic.compare(pointer->throttleLSentence) == 0) {
++        float value = 0.0;
++        try{
++            value = std::stof(nats_data);
++        } catch (...){
++            std::cout << "ERROR in receiving Throttle L from NATS" << std::endl;
++        }
++        pointer->throttleL = value;
++    } else if (nats_topic.compare(pointer->throttleRSentence) == 0) {
++        float value = 0.0;
++        try{
++            value = std::stof(nats_data);
++        } catch (...){
++            std::cout << "ERROR in receiving Throttle R from NATS" << std::endl;
++        }
++        pointer->throttleR = value;
++    }
++
++    // Don't forget to destroy the message!
++    natsMsg_Destroy(msg);
++}
++
++NatsThrottle::NatsThrottle(natsConnection *conn) {
++    pointer = this;
++    throttleL = 0.0;
++    throttleR = 0.0;
++
++    nc = conn;
++
++    natsTopic = std::getenv("NATS_THROTTLE_SENDER");
++    if (natsTopic == NULL) {
++        std::cout << "ERROR: NO NATS_THROTTLE_SENDER PASSED, USING DEV" << std::endl;
++        natsTopic = "physics";
++    }
++
++    throttleLSentence = std::string{ natsTopic } + ".THROTTLE.L";
++    throttleRSentence = std::string{ natsTopic } + ".THROTTLE.R";
++
++    std::string natsGeneralTopic = std::string{ natsTopic } + ".THROTTLE.*";
++
++    s = natsConnection_Subscribe(&sub, nc, natsGeneralTopic.c_str(), onMsg, NULL);
++
++    std::cout << "NATS: SUBSCRIBED TO: " << natsGeneralTopic << std::endl;
++}
+\ No newline at end of file
+diff --git a/src/NatsThrottle.hpp b/src/NatsThrottle.hpp
+new file mode 100644
+index 00000000..86e85aa0
+--- /dev/null
++++ b/src/NatsThrottle.hpp
+@@ -0,0 +1,19 @@
++#include "nats/nats.h"
++#include <string.h>
++#include <string>
++
++class NatsThrottle
++{
++    public:
++        NatsThrottle(natsConnection *conn);
++
++        float throttleL;
++        float throttleR;
++        natsConnection *nc  = NULL;
++        natsSubscription *sub = NULL;
++        natsMsg *msg = NULL;
++        natsStatus s;
++        const char* natsTopic;
++        std::string throttleLSentence;
++        std::string throttleRSentence;
++};
+\ No newline at end of file
+diff --git a/src/main.cpp b/src/main.cpp
+index f0e4ecc9..60d13d0c 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -44,6 +44,7 @@
+ #include "nats/nats.h"
+ #include "NatsRadarCommand.hpp"
+ #include "NatsRudder.hpp"
++#include "NatsThrottle.hpp"
+ 
+ #include <cstdlib> //For rand(), srand()
+ #include <vector>
+@@ -806,6 +807,7 @@ int main(int argc, char ** argv)
+ 
+     NatsRadarCommand radarCommand(nc, &model);
+     NatsRudder rudder(nc);
++    NatsThrottle throttle(nc);
+ 
+     //Load the gui
+     bool hideEngineAndRudder=false;
+@@ -889,6 +891,8 @@ int main(int argc, char ** argv)
+         model.setRudder((irr::f32)rudder.rudder);
+         model.setRudderPumpState(1, rudder.pump1on);
+         model.setRudderPumpState(2, rudder.pump2on);
++        model.setPortEngine(throttle.throttleL);
++        model.setStbdEngine(throttle.throttleR);
+ 
+         // Update NMEA, check if new sensor or AIS data is ready to be sent
+ //        nmeaProfile.tic();
+-- 
+2.39.0
+

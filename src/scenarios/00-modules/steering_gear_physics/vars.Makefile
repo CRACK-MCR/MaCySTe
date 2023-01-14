@@ -1,0 +1,6 @@
+steering_gear_physics_pod_steering_gear_physics_extra_vars += \
+	nats_topic \
+	verbose
+
+steering_gear_physics_pod_steering_gear_physics_extra_var_nats_topic = physics
+steering_gear_physics_pod_steering_gear_physics_extra_var_verbose = 1

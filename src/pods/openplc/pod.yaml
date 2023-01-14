@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-openplc-${plc_name}
+spec:
+  volumes:
+    - name: config
+      hostPath:
+        path: ${CONFIG_DIR}/plcs/${plc_name}/mbconfig.cfg
+        type: File
+    - name: program
+      hostPath:
+        path: ${CONFIG_DIR}/plcs/${plc_name}/main.st
+        type: File
+  containers:
+    - name: openplc
+      image: ${openplc_image}
+      volumeMounts:
+      - { name: config, mountPath: /data/mbconfig.cfg.tmpl, readOnly: true }
+      - { name: program, mountPath: /data/main.st, readOnly: true }

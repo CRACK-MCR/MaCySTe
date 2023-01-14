@@ -1,0 +1,12 @@
+FROM docker.io/library/rust:1.66
+
+COPY . /usr/src/websocket-to-websocket
+
+WORKDIR /usr/src/websocket-to-websocket
+RUN \
+  --mount=type=cache,dst=/root/.cargo \
+  --mount=type=cache,dst=/usr/src/websocket-to-websocket/target \
+  cargo install --path .
+
+WORKDIR /srv
+CMD [ "websocket-to-websocket" ]

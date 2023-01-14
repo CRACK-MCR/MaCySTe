@@ -1,0 +1,31 @@
+From 3ea1d71de78edd0d060914936ad502249e613ab4 Mon Sep 17 00:00:00 2001
+From: Giacomo Longo <gabibbo97@gmail.com>
+Date: Wed, 21 Dec 2022 22:32:57 +0100
+Subject: [PATCH 02/10] Allow overriding NMEA destination via env
+
+---
+ src/NMEA.cpp | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/src/NMEA.cpp b/src/NMEA.cpp
+index 575e65b5..f32b151b 100644
+--- a/src/NMEA.cpp
++++ b/src/NMEA.cpp
+@@ -51,6 +51,14 @@ NMEA::NMEA(SimulationModel* model, std::string serialPortName, irr::u32 serialBa
+     currentMessageType = 0;
+ 
+     //Set up UDP
++    const char* udpHostnameEnv = std::getenv("NMEA_HOST");
++    if (udpHostnameEnv != NULL) {
++        udpHostname = std::string { udpHostnameEnv };
++    }
++    const char* udpPortNameEnv = std::getenv("NMEA_PORT");
++    if (udpPortNameEnv != NULL) {
++        udpPortName = std::string { udpPortNameEnv };
++    }
+     
+     //TODO: Check guide at http://stripydog.blogspot.co.uk/2015/03/nmea-0183-over-ip-unwritten-rules-for.html
+     try {
+-- 
+2.39.0
+

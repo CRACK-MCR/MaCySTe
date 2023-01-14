@@ -1,0 +1,5 @@
+satellite_router_pods += mini_router
+
+satellite_router_pod_mini_router_network_interfaces += eth0 eth1
+satellite_router_pod_mini_router_eth0_network = BRIDGE
+satellite_router_pod_mini_router_eth1_network = SIMINT

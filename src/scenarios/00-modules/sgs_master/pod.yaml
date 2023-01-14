@@ -1,0 +1,7 @@
+      env:
+      - { name: STEERING_GEAR_SERIAL_IP, value: ${steering_gear_physics_pod_steering_gear_physics_eth0_ip} }
+      - { name: STEERING_GEAR_PUMP1_PLC_SERIAL_IP, value: ${sgs_pump_1_pod_openplc_eth0_ip} }
+      - { name: STEERING_GEAR_PUMP2_PLC_SERIAL_IP, value: ${sgs_pump_2_pod_openplc_eth0_ip} }
+      - { name: STEERING_GEAR_OIL1_PLC_SERIAL_IP, value: ${sgs_oil_1_pod_openplc_eth0_ip} }
+      - { name: STEERING_GEAR_OIL2_PLC_SERIAL_IP, value: ${sgs_oil_2_pod_openplc_eth0_ip} }
+      - { name: STEERING_GEAR_OIL_TANK_PLC_SERIAL_IP, value: ${sgs_oil_tank_pod_openplc_eth0_ip} }

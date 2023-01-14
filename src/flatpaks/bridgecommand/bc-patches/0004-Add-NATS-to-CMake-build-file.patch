@@ -1,0 +1,44 @@
+From 84d53d31b30146b1eb651ab5d873bfee9d758da1 Mon Sep 17 00:00:00 2001
+From: Giacomo Longo <gabibbo97@gmail.com>
+Date: Wed, 21 Dec 2022 22:35:00 +0100
+Subject: [PATCH 04/10] Add NATS to CMake build file
+
+---
+ src/CMakeLists.txt | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index f8060a22..71b3b7c0 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -13,6 +13,9 @@ if (APPLE)
+     set(CMAKE_OSX_DEPLOYMENT_TARGET "10.7")
+ endif (APPLE)
+ 
++find_package(cnats CONFIG REQUIRED)
++find_package(marnav CONFIG REQUIRED)
++
+ add_subdirectory(libs/asio)
+ add_subdirectory(libs/enet-1.3.14)
+ add_subdirectory(libs/Irrlicht)
+@@ -109,6 +112,8 @@ if (APPLE)
+     target_link_libraries(bridgecommand-bc PRIVATE
+         bc-asio
+         enet
++        cnats::nats
++        marnav
+         bc-serial
+         bc-irrlicht
+         Threads::Threads
+@@ -122,6 +127,8 @@ else (APPLE)
+     target_link_libraries(bridgecommand-bc PRIVATE
+         bc-asio
+         enet
++        cnats::nats
++        marnav
+         bc-serial
+         bc-irrlicht
+         Threads::Threads
+-- 
+2.39.0
+

@@ -1,0 +1,5 @@
+websocket_to_websocket_pods += websocket_to_websocket
+
+websocket_to_websocket_pod_websocket_to_websocket_network_interfaces += eth0 mgmt0
+websocket_to_websocket_pod_websocket_to_websocket_eth0_network = SIMINT
+websocket_to_websocket_pod_websocket_to_websocket_mgmt0_network = MANAGEMENT

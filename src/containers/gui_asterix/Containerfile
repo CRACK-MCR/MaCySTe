@@ -1,0 +1,14 @@
+ARG JAVASCRIPT_IMAGE
+FROM ${JAVASCRIPT_IMAGE} AS build
+
+COPY . /opt/app
+WORKDIR /opt/app
+RUN \
+  --mount=type=cache,dst=/opt/app/node_modules \
+  npm install && \
+  npm run prepare
+
+FROM macyste_spa_hoster AS app
+COPY --from=build /opt/app/app/index.js /srv/index.js
+COPY --from=build /opt/app/app/index.js /srv/index.js.map
+COPY ./app /srv

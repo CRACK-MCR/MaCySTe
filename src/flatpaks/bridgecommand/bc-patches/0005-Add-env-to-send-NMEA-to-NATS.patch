@@ -1,0 +1,139 @@
+From 3979ff5b0e985bcad5f79afd923a0fbc457c2b69 Mon Sep 17 00:00:00 2001
+From: Giacomo Longo <gabibbo97@gmail.com>
+Date: Fri, 16 Dec 2022 12:10:57 +0100
+Subject: [PATCH 05/10] Add env to send NMEA to NATS
+
+---
+ src/NMEA.cpp | 22 +++++++++++++++++-----
+ src/NMEA.hpp |  7 ++++++-
+ src/main.cpp | 21 ++++++++++++++++++++-
+ 3 files changed, 43 insertions(+), 7 deletions(-)
+
+diff --git a/src/NMEA.cpp b/src/NMEA.cpp
+index f32b151b..752206dc 100644
+--- a/src/NMEA.cpp
++++ b/src/NMEA.cpp
+@@ -40,7 +40,7 @@
+ #define AIS_SKIP_OWN // Define to skip AIS for own ship
+ #define AIS_SKIP_BUOYS // Define to skip AIS for buoys
+ 
+-NMEA::NMEA(SimulationModel* model, std::string serialPortName, irr::u32 serialBaudrate, std::string udpHostname, std::string udpPortName, std::string udpListenPortName, irr::IrrlichtDevice* dev) : autopilot(model) //Constructor
++NMEA::NMEA(SimulationModel* model, std::string serialPortName, irr::u32 serialBaudrate, std::string udpHostname, std::string udpPortName, std::string udpListenPortName, irr::IrrlichtDevice* dev, natsConnection *conn) : autopilot(model) //Constructor
+ {
+     //link to model so network can interact with model
+     this->model = model; //Link to the model
+@@ -99,6 +99,8 @@ NMEA::NMEA(SimulationModel* model, std::string serialPortName, irr::u32 serialBa
+         }
+     }
+ 
++    nc = conn;
++    natsTopic = "nmea.sender.";
+ }
+ 
+ NMEA::~NMEA()
+@@ -695,10 +697,20 @@ void NMEA::sendNMEAUDP()
+ {    
+     if (!messageQueue.empty()) {
+         try {
+-            if (!socket->is_open()) socket->open(asio::ip::udp::v4());
+-            for (auto message : messageQueue)
+-            {
+-                socket->send_to(asio::buffer(message), receiver_endpoint);
++            if (std::getenv("NMEA_TO_NATS") == NULL) {
++                if (!socket->is_open()) socket->open(asio::ip::udp::v4());
++                for (auto message : messageQueue)
++                {
++                    if (message.length() == 0) continue;
++                    socket->send_to(asio::buffer(message), receiver_endpoint);
++                }
++            } else {
++                for (auto message : messageQueue) {
++                    if(message.length() == 0) continue;
++                    std::string sender = message.substr(1, 2); std::string publishTopic = natsTopic + sender;
++                    //std::cout << "TOPIC: " << publishTopic << "\n message: " << message << std::endl;
++                    natsConnection_PublishString(nc, publishTopic.c_str(), (message+"\r\n").c_str());
++                }
+             }
+         } catch (std::exception& e) {
+             device->getLogger()->log(e.what());
+diff --git a/src/NMEA.hpp b/src/NMEA.hpp
+index 12c6f747..5a3fc6e1 100644
+--- a/src/NMEA.hpp
++++ b/src/NMEA.hpp
+@@ -24,6 +24,7 @@
+ #include <string>
+ #include <asio.hpp> //For UDP
+ #include <marnav/ais/ais.hpp>
++#include "nats/nats.h"
+ 
+ //Forward declarations
+ class SimulationModel;
+@@ -32,7 +33,7 @@ class NMEA {
+ 
+ public:
+ 
+-    NMEA(SimulationModel* model, std::string serialPortName, irr::u32 serialBaudrate, std::string udpHostname, std::string udpPortName, std::string udpListenPortName, irr::IrrlichtDevice* dev);
++    NMEA(SimulationModel* model, std::string serialPortName, irr::u32 serialBaudrate, std::string udpHostname, std::string udpPortName, std::string udpListenPortName, irr::IrrlichtDevice* dev, natsConnection *conn);
+     ~NMEA();
+     void updateNMEA();
+     void sendNMEASerial();
+@@ -71,6 +72,10 @@ private:
+     // https://www.itu.int/en/ITU-R/terrestrial/fmd/Pages/mid.aspx
+     const irr::u32 ownMMSI = 247000000;
+     const irr::u32 atonMMSI = 992320000;
++
++    //nats
++    natsConnection *nc = NULL;
++    std::string natsTopic;
+ };
+ 
+ #endif // __NMEA_HPP_INCLUDED__
+diff --git a/src/main.cpp b/src/main.cpp
+index 2d78f028..6364f2e7 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -40,6 +40,9 @@
+ #include "Utilities.hpp"
+ #include "OperatingModeEnum.hpp"
+ 
++// NATS
++#include "nats/nats.h"
++
+ #include <cstdlib> //For rand(), srand()
+ #include <vector>
+ #include <sstream>
+@@ -784,6 +787,22 @@ int main(int argc, char ** argv)
+     //Create simulation model
+     SimulationModel model(device, smgr, &guiMain, &sound, scenarioData, mode, viewAngle, lookAngle, cameraMinDistance, cameraMaxDistance, disableShaders, waterSegments, numberOfContactPoints, limitTerrainResolution);
+ 
++    //Create NATS connection
++    natsConnection *nc;
++    const char* natsURL = std::getenv("NATS_URL");
++    if (natsURL == NULL) {
++        std::cout << "ERROR: NO NATS_URL PASSED" << std::endl;
++        natsURL = "nats://10.1.7.102";
++    }
++
++    natsStatus s = natsConnection_ConnectTo(&nc, natsURL);
++
++    if (s == NATS_OK)
++        std::cout << "CONNECTED TO " << natsURL << std::endl;
++    else
++        std::cout << "ERROR IN CONNECTING TO " << natsURL << std::endl;
++
++
+     //Load the gui
+     bool hideEngineAndRudder=false;
+     if (mode==OperatingMode::Secondary) {
+@@ -805,7 +824,7 @@ int main(int argc, char ** argv)
+     device->setEventReceiver(&receiver);
+ 
+     //create NMEA serial port and UDP, linked to model
+-    NMEA nmea(&model, nmeaSerialPortName, nmeaSerialPortBaudrate, nmeaUDPAddressName, nmeaUDPPortName, nmeaUDPListenPortName, device);
++    NMEA nmea(&model, nmeaSerialPortName, nmeaSerialPortBaudrate, nmeaUDPAddressName, nmeaUDPPortName, nmeaUDPListenPortName, device, nc);
+ 
+ 	//Load sound files
+ 	sound.load(model.getOwnShipEngineSound(), model.getOwnShipWaveSound(), model.getOwnShipHornSound(), model.getOwnShipAlarmSound());
+-- 
+2.39.0
+

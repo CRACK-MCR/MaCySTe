@@ -1,0 +1,3 @@
+      - { name: MENU_SGS_MASTER_TEXT, value: "SGS Master PLC" }
+      - { name: MENU_SGS_MASTER_TIP, value: "username=openplc password=openplc" }
+      - { name: MENU_SGS_MASTER_URL, value: "http://${sgs_master_pod_openplc_mgmt0_ip}:8080" }

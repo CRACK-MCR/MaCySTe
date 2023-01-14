@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-steering-gear-physics
+spec:
+  containers:
+    - name: physics
+      image: ${steering_gear_system_image}
+      env:
+      - { name: NATS_URL, value: ${nats_url} }
+      - { name: NATS_TOPIC, value: ${nats_topic} }
+      - { name: VERBOSE, value: ${verbose} }

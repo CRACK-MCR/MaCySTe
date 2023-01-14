@@ -1,0 +1,115 @@
+body {
+  font-family: sans-serif;
+  text-align: center;
+}
+
+button {
+  background: white;
+  border: 2px black solid;
+  border-radius: 5px;
+
+  transition: all 0.25s;
+}
+
+button.active {
+  background: black;
+  color: white;
+}
+
+button.error {
+  background: red;
+  border-color: darkred;
+  color: yellow;
+}
+
+button.error::before {
+  content: '⚠️ ';
+}
+
+button.error::after {
+  content: ' ⚠️';
+}
+
+html {
+  height: 100%;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: 100%;
+}
+
+header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+#buttons {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+#placeholder, #main-iframe {
+  margin: 5px;
+  flex: 1;
+}
+
+#placeholder {
+  color: white;
+  font-family: monospace;
+  text-transform: uppercase;
+  font-size: 48px;
+  background: black;
+}
+
+#placeholder:not(.hidden) {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+#main-iframe {
+  border: black 2px solid;
+  border-radius: 3px;
+}
+
+.hidden {
+  display: none;
+}
+
+#controls {
+  padding-top: 5px;
+  font-family: monospace;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+
+  transition: all 0.5s;
+}
+
+#controls.reduced {
+  font-size: 10px;
+  padding-bottom: 0.5px;
+  padding-top: 0.5px;
+  margin-bottom: -5px;
+}
+
+#controls-info {
+  text-transform: uppercase;
+}

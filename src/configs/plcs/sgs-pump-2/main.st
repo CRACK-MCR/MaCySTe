@@ -1,0 +1,177 @@
+FUNCTION Registers_as_Real : REAL
+  VAR_INPUT
+    LW : UINT;
+    HW : UINT;
+  END_VAR
+
+  {{
+  union words_to_real {
+    uint16_t i[2];
+    float f;
+  }w2r;
+
+  w2r.i[0] = LW;
+  w2r.i[1] = HW;
+
+  return w2r.f;
+  }}
+END_FUNCTION
+
+FUNCTION_BLOCK Flow_Alarm
+  VAR_EXTERNAL
+    PRES_VALVE_FLOW_1 : UINT;
+    PRES_VALVE_FLOW_2 : UINT;
+  END_VAR
+  VAR
+    PRES_VALVE_FLOW : REAL;
+  END_VAR
+  VAR_OUTPUT
+    ALARM : UINT;
+  END_VAR
+
+  PRES_VALVE_FLOW := Registers_as_Real(PRES_VALVE_FLOW_1, PRES_VALVE_FLOW_2);
+
+  IF PRES_VALVE_FLOW >= 5.0 THEN
+    ALARM := 1;
+  ELSE
+    ALARM := 0;
+  END_IF;
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK Pressure_Alarm
+  VAR_EXTERNAL
+    PRESSURE_1 : UINT;
+    PRESSURE_2 : UINT;
+  END_VAR
+  VAR
+    PRESSURE : REAL;
+  END_VAR
+  VAR_OUTPUT
+    ALARM : UINT;
+  END_VAR
+
+  PRESSURE := Registers_as_Real(PRESSURE_1, PRESSURE_2);
+
+  IF PRESSURE >= 80.0 THEN
+    ALARM := 1;
+  ELSE
+    ALARM := 0;
+  END_IF;
+END_FUNCTION_BLOCK
+
+FUNCTION_BLOCK Temperature_Alarm
+  VAR_EXTERNAL
+    TEMPERATURE_1 : UINT;
+    TEMPERATURE_2 : UINT;
+  END_VAR
+  VAR
+    TEMPERATURE : REAL;
+  END_VAR
+  VAR_OUTPUT
+    ALARM : UINT;
+  END_VAR
+
+  TEMPERATURE := Registers_as_Real(TEMPERATURE_1, TEMPERATURE_2);
+
+  IF TEMPERATURE >= 82.0 THEN
+    ALARM := 1;
+  ELSE
+    ALARM := 0;
+  END_IF;
+END_FUNCTION_BLOCK
+
+FUNCTION Real_as_Registers : REAL
+  VAR_INPUT
+    NUMERO : REAL;
+  END_VAR
+  VAR_OUTPUT
+    LW : UINT;
+    HW : UINT;
+  END_VAR
+
+  {{
+  union words_to_real {
+    uint16_t i[2];
+    float f;
+  }w2r;
+
+  w2r.f = NUMERO;
+  LW = w2r.i[0];
+  HW = w2r.i[1];
+  }}
+END_FUNCTION
+
+FUNCTION_BLOCK Open_pressure_valve
+  VAR_EXTERNAL
+    PRESSURE_1 : UINT;
+    PRESSURE_2 : UINT;
+  END_VAR
+  VAR
+    PRESSURE : REAL;
+  END_VAR
+  VAR_OUTPUT
+    OPEN_VALVE : UINT;
+  END_VAR
+
+  PRESSURE := Registers_as_Real(PRESSURE_1, PRESSURE_2);
+
+  IF PRESSURE >= 75.0 THEN
+    OPEN_VALVE := 1;
+  ELSE
+    OPEN_VALVE := 0;
+  END_IF;
+END_FUNCTION_BLOCK
+
+PROGRAM pump
+  VAR_EXTERNAL
+    RPM_1 : UINT;
+    RPM_2 : UINT;
+    LPS_1 : UINT;
+    LPS_2 : UINT;
+    PRES_VALVE_FLOW_1 : UINT;
+    PRES_VALVE_FLOW_2 : UINT;
+    PRESSURE_1 : UINT;
+    PRESSURE_2 : UINT;
+    TEMPERATURE_1 : UINT;
+    TEMPERATURE_2 : UINT;
+    PRESSURE_VALVE_OPEN : UINT;
+    OIL_FILTER_HIGH_DIFFERENTIAL_PRESSURE_ALARM : UINT;
+    HIGH_OIL_TEMPERATURE_ALARM : UINT;
+  END_VAR
+  VAR
+    Open_pressure_valve0 : Open_pressure_valve;
+    Pressure_Alarm0 : Pressure_Alarm;
+    Temperature_Alarm0 : Temperature_Alarm;
+  END_VAR
+
+  Open_pressure_valve0();
+  PRESSURE_VALVE_OPEN := Open_pressure_valve0.OPEN_VALVE;
+  Pressure_Alarm0();
+  OIL_FILTER_HIGH_DIFFERENTIAL_PRESSURE_ALARM := Pressure_Alarm0.ALARM;
+  Temperature_Alarm0();
+  HIGH_OIL_TEMPERATURE_ALARM := Temperature_Alarm0.ALARM;
+END_PROGRAM
+
+
+CONFIGURATION Config0
+
+  RESOURCE Res0 ON PLC
+    VAR_GLOBAL
+      RPM_1 AT %IW100 : UINT;
+      RPM_2 AT %IW101 : UINT;
+      LPS_1 AT %IW102 : UINT;
+      LPS_2 AT %IW103 : UINT;
+      PRES_VALVE_FLOW_1 AT %IW104 : UINT;
+      PRES_VALVE_FLOW_2 AT %IW105 : UINT;
+      PRESSURE_1 AT %IW106 : UINT;
+      PRESSURE_2 AT %IW107 : UINT;
+      TEMPERATURE_1 AT %IW108 : UINT;
+      TEMPERATURE_2 AT %IW109 : UINT;
+      PRESSURE_VALVE_OPEN AT %QW100 : UINT;
+      HIGH_OIL_TEMPERATURE_ALARM AT %QW101 : UINT;
+      OIL_FILTER_HIGH_DIFFERENTIAL_PRESSURE_ALARM AT %QW102 : UINT;
+    END_VAR
+    TASK task0(INTERVAL := T#20ms,PRIORITY := 0);
+    PROGRAM instance0 WITH task0 : pump;
+  END_RESOURCE
+END_CONFIGURATION

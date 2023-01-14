@@ -1,0 +1,39 @@
+From d524ac4ad0db615256f218afe3ea42943027d01d Mon Sep 17 00:00:00 2001
+From: Giacomo Longo <gabibbo97@gmail.com>
+Date: Wed, 21 Dec 2022 22:33:25 +0100
+Subject: [PATCH 03/10] Allow preseeding scenario via env
+
+---
+ src/main.cpp | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/src/main.cpp b/src/main.cpp
+index adb8055d..2d78f028 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -589,7 +589,9 @@ int main(int argc, char ** argv)
+ 
+     irr::IrrlichtDevice* device = irr::createDeviceEx(deviceParameters);
+     //Start paused initially
+-    device->getTimer()->setSpeed(0.0);
++    if (std::getenv("SKIP_PAUSE") == NULL) {
++        device->getTimer()->setSpeed(0.0);
++    }
+ 
+ 	//On Windows, redirect console stderr to log file
+ 	std::string userLog = userFolder + "log.txt";
+@@ -686,7 +688,10 @@ int main(int argc, char ** argv)
+         mode = OperatingMode::Secondary;
+     }
+ 
+-    if (mode == OperatingMode::Normal) {
++    const char* scenarioNameEnv = std::getenv("SCENARIO_NAME");
++    if (scenarioNameEnv != NULL) {
++        scenarioName = std::string { scenarioNameEnv };
++    } else if (mode == OperatingMode::Normal) {
+         ScenarioChoice scenarioChoice(device,&language);
+         scenarioChoice.chooseScenario(scenarioName, hostname, udpPort, mode, scenarioPath);
+     }
+-- 
+2.39.0
+

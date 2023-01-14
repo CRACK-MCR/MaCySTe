@@ -1,0 +1,6 @@
+radar_converter_navico_pods += radar_converter
+
+radar_converter_navico_pod_radar_converter_network_interfaces += eth0 nats0
+radar_converter_navico_pod_radar_converter_eth0_network = BRIDGE
+radar_converter_navico_pod_radar_converter_nats0_network = NATS
+

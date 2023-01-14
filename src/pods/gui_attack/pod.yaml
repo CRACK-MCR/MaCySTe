@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-gui-attack
+spec:
+  containers:
+    - name: gui-attack
+      image: ${gui_attack_image}
+      env:
+      - { name: WS_CC_URL, value: "${ws_cc_url}" }
+      - { name: WS_NMEA_URL, value: "${ws_nmea_url}" }

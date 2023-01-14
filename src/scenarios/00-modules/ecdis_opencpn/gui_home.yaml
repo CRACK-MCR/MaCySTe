@@ -1,0 +1,2 @@
+      - { name: MENU_ECDIS_OPENCPN_TEXT, value: "ECDIS (OpenCPN)" }
+      - { name: MENU_ECDIS_OPENCPN_URL, value: "http://${ecdis_opencpn_pod_opencpn_mgmt0_ip}:8080/vnc.html?autoconnect=1&resize=scale" }

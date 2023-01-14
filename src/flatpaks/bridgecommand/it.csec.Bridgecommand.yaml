@@ -1,0 +1,99 @@
+app-id: it.csec.Bridgecommand
+runtime: org.freedesktop.Platform
+runtime-version: "22.08"
+sdk: org.freedesktop.Sdk
+command: bridgecommand-entrypoint.sh
+finish-args:
+  - --device=all
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=x11
+  - --filesystem=~/.Bridge Command
+build-options:
+  cflags: -O3 -march=x86-64-v2 -flto -ffat-lto-objects
+  cxxflags: -O3 -march=x86-64-v2 -flto -ffat-lto-objects
+
+# __GLX_VENDOR_LIBRARY_NAME=nvidia __NV_PRIME_RENDER_OFFLOAD=1 
+# flatpak run --command=bridgecommand-bc 
+# --cwd=/app/bin --device=all 
+# --socket=x11 --socket=fallback-x11 --share=ipc it.csec.Bridgecommand
+modules:
+    - name: nats
+      buildsystem: cmake
+      config-opts:
+        - -DNATS_BUILD_STREAMING=OFF
+        - -DNATS_BUILD_EXAMPLES=OFF
+        - -DNATS_BUILD_TESTING=OFF
+      sources:
+        - type: git
+          # git config --global protocol.file.allow always
+          url: https://github.com/nats-io/nats.c.git
+          tag: v3.5.0
+    
+    - name: marnav
+      buildsystem: cmake
+      config-opts:
+        - -DENABLE_EXAMPLES=OFF
+        - -DENABLE_TESTS=OFF
+        - -DENABLE_TESTS_BENCHMARK=OFF
+      sources:
+        - type: git
+          url: https://github.com/mariokonrad/marnav.git
+          tag: v0.13.0
+        - type: patch
+          path: marnav-patches/0001-Solve-CMake-error.patch
+
+    - name: portaudio
+      buildsystem: cmake
+      sources:
+        - type: git
+          url: https://github.com/PortAudio/portaudio.git
+          tag: v19.7.0
+
+    - name: bridgecommand
+      buildsystem: cmake
+      no-make-install: true
+      subdir: src
+      post-install:
+        - chmod +x ../bridgecommand-entrypoint.sh
+        - mv ../bridgecommand-entrypoint.sh ../bin
+        - mv bridgecommand* ../bin
+        - mv ../bin /app/bin
+        - mv ../scenarioGenoa /app/bin/Scenarios/Genoa
+        - mv ../worldGenoa /app/bin/World/Genoa
+        - python3 ../set_radar_range.py /app
+      sources:
+          - type: git
+            url: https://github.com/bridgecommand/bc.git
+            commit: 09bd3a7ee8321ed9cdc34b41acc8a0eaa23c63d8
+          - type: patch
+            path: bc-patches/0001-Add-NMEA-sentences-VDM-VDO-VTG-VHW.patch
+          - type: patch
+            path: bc-patches/0002-Allow-overriding-NMEA-destination-via-env.patch
+          - type: patch
+            path: bc-patches/0003-Allow-preseeding-scenario-via-env.patch
+          - type: patch
+            path: bc-patches/0004-Add-NATS-to-CMake-build-file.patch
+          - type: patch
+            path: bc-patches/0005-Add-env-to-send-NMEA-to-NATS.patch
+          - type: patch
+            path: bc-patches/0006-Skip-start-menu-via-env.patch
+          - type: patch
+            path: bc-patches/0007-RADAR-image-export-and-command-import-via-NATS.patch
+          - type: patch
+            path: bc-patches/0008-Rudder-values-from-NATS.patch
+          - type: patch
+            path: bc-patches/0009-Throttle-values-from-NATS.patch
+          - type: patch
+            path: bc-patches/0010-Add-headless.patch
+          - type: file
+            path: bc-entrypoint.sh
+            dest-filename: bridgecommand-entrypoint.sh
+          - type: dir
+            path: scenarios
+          - type: dir
+            path: worlds
+          - type: file
+            path: scripts/set_radar_range.py
+

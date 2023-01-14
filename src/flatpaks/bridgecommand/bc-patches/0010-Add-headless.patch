@@ -1,0 +1,48 @@
+From 6f85a923e863aa6a71ad6cdcaef19579c3d77bbf Mon Sep 17 00:00:00 2001
+From: Giacomo Longo <gabibbo97@gmail.com>
+Date: Mon, 2 Jan 2023 12:29:02 +0100
+Subject: [PATCH 10/10] Add headless
+
+---
+ src/main.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/main.cpp b/src/main.cpp
+index 60d13d0c..6f28d6ab 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -936,6 +936,7 @@ int main(int argc, char ** argv)
+         }
+         bool fullScreenRadar = guiMain.getLargeRadar();
+         { IPROF("Render radar");
++        if (std::getenv("HEADLESS") != NULL) {} else {
+         if (model.isRadarOn()) {
+             //radar view portion
+             if (graphicsHeight>graphicsHeight3d && (guiMain.getShowInterface() || fullScreenRadar)) {
+@@ -950,6 +951,7 @@ int main(int argc, char ** argv)
+                 model.setWaterVisible(true); //Re-show the water
+             }
+         }
++        }
+ 
+  //       renderRadarProfile.toc();
+ 
+@@ -957,6 +959,7 @@ int main(int argc, char ** argv)
+         }{ IPROF("Render");
+ 
+         //3d view portion
++        if (std::getenv("HEADLESS") != NULL) {} else {
+         model.setMainCameraActive(); //Note that the NavLights expect the main camera to be active, so they know where they're being viewed from
+         if (!fullScreenRadar) {
+             if (guiMain.getShowInterface()) {
+@@ -970,6 +973,7 @@ int main(int argc, char ** argv)
+             smgr->drawAll();
+             //drawAll3dProfile.toc();
+         }
++        }
+ 
+  //       renderProfile.toc();
+ 
+-- 
+2.39.0
+

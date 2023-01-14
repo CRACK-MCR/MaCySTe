@@ -1,0 +1,11 @@
+ARG PYTHON_IMAGE
+FROM ${PYTHON_IMAGE}
+
+COPY . /usr/src/app
+
+WORKDIR /usr/src/app
+RUN \
+  --mount=type=cache,dst=/root/.cache \
+  pip install -r requirements.txt
+
+ENTRYPOINT [ "/usr/bin/env", "python3", "autopilot" ]

@@ -1,0 +1,9 @@
+ARG PYTHON_IMAGE
+FROM ${PYTHON_IMAGE}
+
+COPY . /usr/src/app
+
+WORKDIR /usr/src/app
+RUN pip install -r requirements.txt
+
+ENTRYPOINT [ "/usr/bin/env", "python3", "modbus-nats-kv" ]

@@ -1,0 +1,7 @@
+ARG FEDORA_IMAGE
+FROM ${FEDORA_IMAGE}
+RUN dnf install -y iptables-nft iproute && dnf clean all
+
+COPY entrypoint.sh /entrypoint
+RUN chmod +x /entrypoint
+ENTRYPOINT [ "/entrypoint" ]

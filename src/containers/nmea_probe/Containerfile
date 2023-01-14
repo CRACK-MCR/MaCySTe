@@ -1,0 +1,10 @@
+ARG PYTHON_IMAGE
+FROM ${PYTHON_IMAGE}
+
+COPY . /opt
+WORKDIR /opt
+RUN pip install -r requirements.txt
+
+WORKDIR /opt/app
+
+ENTRYPOINT [ "/usr/bin/env", "python3", "." ]

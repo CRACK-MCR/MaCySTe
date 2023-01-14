@@ -1,0 +1,2 @@
+FROM macyste_spa_hoster
+ADD static/ /srv

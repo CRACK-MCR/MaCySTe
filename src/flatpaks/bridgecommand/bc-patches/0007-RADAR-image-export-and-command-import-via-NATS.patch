@@ -1,0 +1,373 @@
+From a9d182ae9eace5ec0ac8fce4bff226ad872deaee Mon Sep 17 00:00:00 2001
+From: Giacomo Longo <gabibbo97@gmail.com>
+Date: Fri, 16 Dec 2022 13:07:42 +0100
+Subject: [PATCH 07/10] RADAR image export and command import via NATS
+
+---
+ src/CMakeLists.txt       |   1 +
+ src/NatsRadarCommand.cpp |  33 ++++++++++
+ src/NatsRadarCommand.hpp |  19 ++++++
+ src/RadarCalculation.cpp | 137 ++++++++++++++++++++++++++++++++++++++-
+ src/RadarCalculation.hpp |  26 ++++++++
+ src/SimulationModel.cpp  |   5 ++
+ src/SimulationModel.hpp  |   1 +
+ src/main.cpp             |   2 +
+ 8 files changed, 223 insertions(+), 1 deletion(-)
+ create mode 100644 src/NatsRadarCommand.cpp
+ create mode 100644 src/NatsRadarCommand.hpp
+
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 71b3b7c0..5e8bd37a 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -63,6 +63,7 @@ set(BC_SOURCES
+     MovingWater.cpp
+     MyEventReceiver.cpp
+     NMEA.cpp
++    NatsRadarCommand.cpp
+     NavLight.cpp
+     Network.cpp
+     NetworkPrimary.cpp
+diff --git a/src/NatsRadarCommand.cpp b/src/NatsRadarCommand.cpp
+new file mode 100644
+index 00000000..00f352ee
+--- /dev/null
++++ b/src/NatsRadarCommand.cpp
+@@ -0,0 +1,33 @@
++#include "NatsRadarCommand.hpp"
++
++NatsRadarCommand *radarPointer;
++
++void onRadarMsg(natsConnection *nc, natsSubscription *sub, natsMsg *msg, void *closure)
++{
++    // Prints the message, using the message getters:
++    std::string nats_data(natsMsg_GetData(msg));
++    irr::f32 zoomToReach =  stoi(nats_data) / 1852.0;
++    while (zoomToReach != radarPointer->model->getRadarRange()) {
++        irr::f32 currentRange = radarPointer->model->getRadarRange();
++        if (zoomToReach >= currentRange) {
++            radarPointer->model->increaseRadarRange();
++        } else {
++            radarPointer->model->decreaseRadarRange();
++        }
++        irr::f32 newRange = radarPointer->model->getRadarRange();
++        if (currentRange == newRange) {
++            // can't zoom more
++            break;
++        }
++    }
++    natsMsg_Destroy(msg);
++}
++
++NatsRadarCommand::NatsRadarCommand(natsConnection *conn, SimulationModel *mod) {
++    radarPointer = this;
++    nc = conn;
++    model = mod;
++
++    s = natsConnection_Subscribe(&sub, nc, "radar.ZOOM", onRadarMsg, NULL);
++
++}
+\ No newline at end of file
+diff --git a/src/NatsRadarCommand.hpp b/src/NatsRadarCommand.hpp
+new file mode 100644
+index 00000000..a3f7c1c3
+--- /dev/null
++++ b/src/NatsRadarCommand.hpp
+@@ -0,0 +1,19 @@
++#include "nats/nats.h"
++#include "SimulationModel.hpp"
++#include <string.h>
++#include <string>
++
++class NatsRadarCommand
++{
++    public:
++        NatsRadarCommand(natsConnection *conn, SimulationModel *mod);
++
++        SimulationModel *model;
++        natsConnection *nc  = NULL;
++        natsSubscription *sub = NULL;
++        natsMsg *msg = NULL;
++        natsStatus s;
++        const char* natsTopic;
++        std::string zoom_in;
++        std::string zoom_out;
++};
+\ No newline at end of file
+diff --git a/src/RadarCalculation.cpp b/src/RadarCalculation.cpp
+index 95a3a747..0729087a 100644
+--- a/src/RadarCalculation.cpp
++++ b/src/RadarCalculation.cpp
+@@ -34,6 +34,25 @@
+ 
+ ////using namespace irr;
+ 
++static void _jsPubErr(jsCtx *js, jsPubAckErr *pae, void *closure)
++{
++    int *errors = (int*) closure;
++
++    printf("Error: %u - Code: %u - Text: %s\n", pae->Err, pae->ErrCode, pae->ErrText);
++    printf("Original message: %.*s\n", natsMsg_GetDataLength(pae->Msg), natsMsg_GetData(pae->Msg));
++
++    *errors = (*errors + 1);
++
++    // If we wanted to resend the original message, we would do something like that:
++    //
++    // js_PublishMsgAsync(js, &(pae->Msg), NULL);
++    //
++    // Note that we use `&(pae->Msg)` so that the library set it to NULL if it takes
++    // ownership, and the library will not destroy the message when this callback returns.
++
++    // No need to destroy anything, everything is handled by the library.
++}
++
+ RadarCalculation::RadarCalculation() : rangeResolution(128), angularResolution(360)
+ {
+     
+@@ -72,6 +91,82 @@ RadarCalculation::RadarCalculation() : rangeResolution(128), angularResolution(3
+ 
+     currentScanAngle = 0;
+     currentScanLine  = 0;
++
++    //Nats
++    natsURL = std::getenv("NATS_URL");
++    if (natsURL == NULL) {
++        std::cout << "ERROR: NO NATS_URL PASSED" << std::endl;
++        natsURL = "nats://127.0.0.1";
++    }
++
++    stream = "radarstream";
++
++    subj = std::getenv("NATS_RADAR_TOPIC");
++    if (subj == NULL) {
++        std::cout << "ERROR: NO NATS_RADAR_TOPIC PASSED, USING DEV" << std::endl;
++        subj = "radar";
++    }
++    
++    // Connect to NATS
++    _natsStatus = natsConnection_ConnectTo(&conn, natsURL);
++
++    while (_natsStatus != NATS_OK)
++    {
++        std::cout << "Waiting for NATS..." << std::endl;
++        
++        _natsStatus = natsConnection_ConnectTo(&conn, natsURL);
++    }
++
++    // Initialize and set some JetStream options
++    if (_natsStatus == NATS_OK)
++        _natsStatus = jsOptions_Init(&jsOpts);
++
++    if (_natsStatus == NATS_OK)
++    {
++        jsOpts.PublishAsync.ErrHandler           = _jsPubErr;
++        jsOpts.PublishAsync.ErrHandlerClosure    = (void*) &errors;
++        // Create JetStream Context
++        _natsStatus = natsConnection_JetStream(&js, conn, &jsOpts);
++    }
++
++    if (_natsStatus == NATS_OK)
++    {
++        jsStreamInfo    *si = NULL;
++
++        // First check if the stream already exists.
++        _natsStatus = js_GetStreamInfo(&si, js, stream, NULL, &jerr);
++        if (_natsStatus == NATS_NOT_FOUND)
++        {
++            jsStreamConfig  cfg;
++
++            // Initialize the configuration structure.
++            jsStreamConfig_Init(&cfg);
++            cfg.Name = stream;
++            // Set the subject
++            cfg.Subjects = &subj;
++            cfg.SubjectsLen = 1;
++            // Make it a memory stream.
++            cfg.Storage = js_MemoryStorage;
++            // Add the stream,
++            _natsStatus = js_AddStream(&si, js, &cfg, NULL, &jerr);
++        }
++        if (_natsStatus == NATS_OK)
++        {
++            // Need to destroy the returned stream object.
++            jsStreamInfo_Destroy(si);
++        }
++
++        // check for existing bucket MATRIX
++        _natsStatus = js_KeyValue(&keyValueStore, js, "MATRIX");
++
++        // create bucket if does not exist
++        if (_natsStatus != NATS_OK) {
++            kvConfig_Init(&kvc);
++            kvc.Bucket = "MATRIX";
++            kvc.History = 1;
++            js_CreateKeyValue(&keyValueStore, js, &kvc);
++        }
++    }
+ }
+ 
+ RadarCalculation::~RadarCalculation()
+@@ -135,6 +230,17 @@ void RadarCalculation::load(std::string radarConfigFile, irr::IrrlichtDevice* de
+         radarBackgroundColours.push_back(radarBackgroundColour);
+         radarForegroundColours.push_back(radarForegroundColour);
+ 
++        const char* rangeResolutionEnv = std::getenv("RADAR_RANGE_RESOLUTION");
++        if (rangeResolutionEnv != NULL) {
++            rangeResolution = std::stoi(rangeResolutionEnv);
++            rangeResolution_max = rangeResolution;
++        }
++        const char* angularResolutionEnv = std::getenv("RADAR_ANGULAR_RESOLUTION");
++        if (angularResolutionEnv != NULL) {
++            angularResolution = std::stoi(angularResolutionEnv);
++            angularResolution_max = angularResolution;
++        }
++
+         // Check in case resolution is set to an invalid value
+         if (rangeResolution < 1) {rangeResolution = 128;}
+         if (angularResolution < 1) {angularResolution = 360;}
+@@ -584,7 +690,7 @@ void RadarCalculation::scan(irr::core::vector3d<int64_t> offsetPosition, const T
+         radarData.push_back(buoys.getRadarData(contactID,position));
+     }
+ 
+-    const irr::f32 RADAR_RPM = 25; //Todo: Make a ship parameter
++    const irr::f32 RADAR_RPM = 24; //Todo: Make a ship parameter
+     const irr::f32 RPMtoDEGPERSECOND = 6;
+     irr::u32 scansPerLoop = RADAR_RPM * RPMtoDEGPERSECOND * deltaTime / (irr::f32) scanAngleStep + (irr::f32) rand() / RAND_MAX ; //Add random value (0-1, mean 0.5), so with rounding, we get the correct radar speed, even though we can only do an integer number of scans
+ 
+@@ -870,12 +976,41 @@ void RadarCalculation::scan(irr::core::vector3d<int64_t> offsetPosition, const T
+                 scanArrayToPlot[filterAngle][currentStep] = 0;
+             }
+             if (scanArrayToPlot[filterAngle][currentStep] > 1) {
++                if (scanArrayToPlot[filterAngle][currentStep] > 2) {
++                    for (int i=0; i < 10; i++) {
++                        if (currentStep-i == 0) break;
++                        scanArrayToPlot[filterAngle][currentStep-i] = 1;
++                    }
++                }
+                 scanArrayToPlot[filterAngle][currentStep] = 1;
+             }
+ 
+         } //End of for loop scanning out
+ 
++        // send radar image to nats       
++        label = "line" + std::to_string(currentScanLine);
+ 
++        // build nats message
++        for(int cell = 0; cell < rangeResolution; cell++) {
++            uint8_t quantizedCellValue = 0;
++            if(scanArrayToPlot[currentScanLine][cell] > 0) {
++                quantizedCellValue = 255;
++            }
++            lineToSend[cell] = quantizedCellValue;
++        }
++ 
++        // send message
++        kvStore_Put(NULL, keyValueStore, label.c_str() , &lineToSend, sizeof(uint8_t)*rangeResolution);
++        irr::f32 heading = ownShip.getHeading();
++        if (heading != lastHeading) {
++            lastHeading = heading;
++            kvStore_Put(NULL, keyValueStore, "heading", &heading, sizeof(irr::f32));
++        }
++
++        if (cellLength != lastCellLength) {
++            lastCellLength = cellLength;
++            kvStore_Put(NULL, keyValueStore, "cell", &cellLength, sizeof(irr::f32));
++        }
+ 
+         //Increment scan line for next time
+         currentScanLine++;
+diff --git a/src/RadarCalculation.hpp b/src/RadarCalculation.hpp
+index 6904b8c1..e60e282a 100644
+--- a/src/RadarCalculation.hpp
++++ b/src/RadarCalculation.hpp
+@@ -24,6 +24,9 @@
+ #include <stdint.h> //for uint64_t
+ 
+ #include <ctime> //To check time elapsed between changing EBL when button held down
++#include "nats/nats.h"
++#include "string"
++#include "string.h"
+ 
+ class Terrain;
+ class OwnShip;
+@@ -178,6 +181,29 @@ class RadarCalculation
+         void drawLine(irr::video::IImage * radarImage, irr::f32 startX, irr::f32 startY, irr::f32 endX, irr::f32 endY, irr::u32 alpha, irr::u32 red, irr::u32 green, irr::u32 blue);//Try with f32 as inputs so we can do interpolation based on the theoretical start and end
+         void drawCircle(irr::video::IImage * radarImage, irr::f32 centreX, irr::f32 centreY, irr::f32 radius, irr::u32 alpha, irr::u32 red, irr::u32 green, irr::u32 blue);//Try with f32 as inputs so we can do interpolation based on the theoretical start and end
+ 
++        //nats
++        const char* natsURL;
++        const char* stream;
++        const char* subj;
++        std::string label;
++        uint8_t lineToSend[512];
++        int64_t start = 0;
++        volatile int errors = 0;
++        jsErrCode jerr = (jsErrCode)0;
++        natsConnection *conn  = NULL;
++        natsOptions *opts = NULL;
++        natsStatus _natsStatus;
++        jsOptions jsOpts;
++        
++        jsCtx *js;
++        kvStore *keyValueStore = NULL;
++        kvConfig kvc;
++
++        // heading
++        irr::f32 lastHeading = 0;
++
++        // cell length
++        irr::f32 lastCellLength = 0;
+ };
+ 
+ #endif
+diff --git a/src/SimulationModel.cpp b/src/SimulationModel.cpp
+index a3f4a788..847894d5 100644
+--- a/src/SimulationModel.cpp
++++ b/src/SimulationModel.cpp
+@@ -928,6 +928,11 @@ SimulationModel::~SimulationModel()
+         radarCalculation.increaseRange();
+     }
+ 
++    irr::f32 SimulationModel::getRadarRange()
++    {
++       return radarCalculation.getRangeNm();
++    }
++
+     void SimulationModel::decreaseRadarRange()
+     {
+         radarCalculation.decreaseRange();
+diff --git a/src/SimulationModel.hpp b/src/SimulationModel.hpp
+index e57e6d25..4444e828 100644
+--- a/src/SimulationModel.hpp
++++ b/src/SimulationModel.hpp
+@@ -188,6 +188,7 @@ public:
+     void setRadarHeadUp();
+     void changeRadarColourChoice();
+     void setArpaOn(bool on);
++    irr::f32 getRadarRange();
+     void setRadarARPARel();
+     void setRadarARPATrue();
+     void setRadarARPAVectors(irr::f32 vectorMinutes);
+diff --git a/src/main.cpp b/src/main.cpp
+index 6364f2e7..fa9598d5 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -42,6 +42,7 @@
+ 
+ // NATS
+ #include "nats/nats.h"
++#include "NatsRadarCommand.hpp"
+ 
+ #include <cstdlib> //For rand(), srand()
+ #include <vector>
+@@ -802,6 +803,7 @@ int main(int argc, char ** argv)
+     else
+         std::cout << "ERROR IN CONNECTING TO " << natsURL << std::endl;
+ 
++    NatsRadarCommand radarCommand(nc, &model);
+ 
+     //Load the gui
+     bool hideEngineAndRudder=false;
+-- 
+2.39.0
+

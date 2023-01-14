@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-asterix-ppi
+spec:
+  containers:
+    - name: ppi
+      image: ${gui_asterix_image}
+      env:
+      - { name: ASTERIX_WS_URL, value: "${asterix_ws_url}" }
+      - { name: NATS_WS_URL, value: "${nats_ws_url}" }
+    - name: proxy
+      image: ${udp_to_websocket_image}
+      securityContext:
+        capabilities:
+          add:
+          - NET_ADMIN
+          - NET_RAW
+      env:
+      - { name: PROXIES_MULTICAST_INTERFACE, value: "${proxies_multicast_interface}" }
+      - name: PROXIES
+        value: >-
+          ASTERIX:${asterix_address}:${asterix_port}

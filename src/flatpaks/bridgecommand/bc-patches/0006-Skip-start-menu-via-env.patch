@@ -1,0 +1,30 @@
+From 3256a05d9bed84c96c77a71e51ce434f7745b8aa Mon Sep 17 00:00:00 2001
+From: Giacomo Longo <gabibbo97@gmail.com>
+Date: Wed, 7 Dec 2022 12:48:53 +0100
+Subject: [PATCH 06/10] Skip start menu via env
+
+---
+ src/launcher/main.cpp | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/src/launcher/main.cpp b/src/launcher/main.cpp
+index 02bf86a6..cd86d78e 100644
+--- a/src/launcher/main.cpp
++++ b/src/launcher/main.cpp
+@@ -372,7 +372,12 @@ int main (int argc, char ** argv)
+     device->getGUIEnvironment()->setFocus(launchBC);
+ 
+     Receiver receiver;
+-    device->setEventReceiver(&receiver);
++    if (std::getenv("SKIP_MENU") != NULL) {
++        execl("./bridgecommand-bc", "bridgecommand-bc", NULL);
++        exit(EXIT_SUCCESS);
++    } else {
++        device->setEventReceiver(&receiver);
++    }
+ 
+     #ifdef FOR_DEB
+     chdir("/usr/bin");
+-- 
+2.39.0
+

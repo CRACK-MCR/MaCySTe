@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-gui-home
+spec:
+  containers:
+    - name: gui-home
+      image: ${gui_home_image}
+      env:

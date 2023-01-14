@@ -1,0 +1,3 @@
+      - { name: MENU_SIEM_TEXT, value: "SIEM" }
+      - { name: MENU_SIEM_TIP, value: "username=admin password=admin" }
+      - { name: MENU_SIEM_URL, value: "http://${siem_opensearch_pod_opensearch_mgmt0_ip}:5601" }

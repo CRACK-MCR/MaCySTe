@@ -1,0 +1,72 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt update && \
+    apt install -y \
+    cmake \
+    build-essential \
+    curl \
+    expat \
+    sqlite \
+    software-properties-common \
+    tcpdump \
+    libgl1-mesa-glx \
+    openbox \
+    tigervnc-standalone-server \
+    supervisor \
+    python3 \
+    python3-pip \
+    python3-numpy \
+    novnc \
+    iproute2 \
+    git
+
+WORKDIR /websockify
+ARG WB_VERSION=d54020538db16a3043eafb7e7c308ea5f03cb896
+RUN git init && \
+    git fetch https://github.com/novnc/websockify.git ${WB_VERSION} && \
+    git checkout FETCH_HEAD
+RUN git checkout ${WB_VERSION}
+RUN python3 setup.py install
+
+#ARG OPENCPN_VERSION=df140209370ff6bef9f8f2710f82de27e42da274
+#ARG OPENCPN_VERSION=b75be767f2de845293fddc646959492cce8495cf
+WORKDIR /usr/local/src/OpenCPN
+ARG OPENCPN_VERSION=4ea65cd1a11edd1e9e98e674cac38ef63c697459
+RUN \
+    git init && \
+    git fetch https://github.com/OpenCPN/OpenCPN.git ${OPENCPN_VERSION} && \
+    git checkout FETCH_HEAD
+RUN git checkout ${OPENCPN_VERSION}
+
+RUN apt update && \
+    apt install -y \
+    pkg-config \
+    libgtk-3-dev \
+    libglu1-mesa-dev \
+    freeglut3-dev \
+    mesa-common-dev \
+    libwxgtk-media3.0-gtk3-dev \
+    libwxgtk-webview3.0-gtk3-dev \
+    libwxgtk3.0-gtk3-dev \
+    gettext \
+    libsqlite3-dev \
+    libbz2-dev \
+    libcurl4-openssl-dev\
+    libarchive-dev \
+    libelf-dev \
+    libusb-1.0-0-dev
+
+WORKDIR /usr/local/src/OpenCPN/build
+RUN cmake .. \
+  && make -j$(nproc) \
+  && make install
+
+RUN opencpn-cmd update-catalog && \
+    opencpn-cmd install-plugin Radar
+
+WORKDIR /
+COPY supervisord.conf /etc/supervisord.conf
+COPY entrypoint.sh ./
+RUN chmod +x ./entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]

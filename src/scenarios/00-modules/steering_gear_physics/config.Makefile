@@ -1,0 +1,5 @@
+steering_gear_physics_pods += steering_gear_physics
+
+steering_gear_physics_pod_steering_gear_physics_network_interfaces += eth0 nats0
+steering_gear_physics_pod_steering_gear_physics_eth0_network = SERIAL
+steering_gear_physics_pod_steering_gear_physics_nats0_network = NATS

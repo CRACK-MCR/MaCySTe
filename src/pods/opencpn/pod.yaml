@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-opencpn-${opencpn_name}
+spec:
+  volumes:
+    - name: config
+      hostPath:
+        path: ${CONFIG_DIR}/opencpn/${opencpn_name}/opencpn.conf
+        type: File
+    - name: charts
+      hostPath:
+        path: ${CONFIG_DIR}/opencpn/charts
+        type: Directory
+  containers:
+    - name: opencpn
+      image: ${opencpn_image}
+      securityContext:
+        capabilities:
+          add:
+          - NET_ADMIN
+          - NET_RAW
+      env:
+      - { name: DISPLAY_X, value: "${opencpn_display_x}" }
+      - { name: DISPLAY_Y, value: "${opencpn_display_y}" }
+      - { name: VNC_HOST, value: "${vnc_host}" }
+      volumeMounts:
+      - { name: config, mountPath: /root/.opencpn/opencpn.conf, readOnly: true }
+      - { name: charts, mountPath: /opencpn-charts, readOnly: true }

@@ -1,0 +1,12 @@
+radar_converter_navico_pod_radar_converter_extra_vars += \
+	radar_converter_name \
+	buffer_size \
+	bind_interface \
+	protocol \
+	image_multicast_if
+
+radar_converter_navico_pod_radar_converter_extra_var_radar_converter_name = navico
+radar_converter_navico_pod_radar_converter_extra_var_buffer_size = 30
+radar_converter_navico_pod_radar_converter_extra_var_bind_interface = $(radar_converter_navico_pod_radar_converter_eth0_ip)
+radar_converter_navico_pod_radar_converter_extra_var_protocol = NAVICO
+radar_converter_navico_pod_radar_converter_extra_var_image_multicast_if = $(radar_converter_navico_pod_radar_converter_eth0_ip)

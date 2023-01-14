@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-${pod_name}
+spec:
+  containers:
+    - name: modbus-nats-kv
+      image: ${modbus_nats_kv_image}
+      args:
+      - server
+      env:
+      - { name: MODBUS_HOST, value: ${modbus_host} }
+      - { name: MODBUS_PORT, value: ${modbus_nats_kv_server_modbus_port} }
+      - { name: NATS_URL, value: ${nats_url} }
+      - { name: NATS_TOPIC, value: ${nats_topic} }
+      - { name: DEFAULT_VALUE, value: ${modbus_nats_kv_server_default_value} }

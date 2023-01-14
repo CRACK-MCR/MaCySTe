@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-nats
+spec:
+  volumes:
+    - name: config
+      hostPath:
+        path: ${nats_config_file}
+        type: File
+    - name: jetstream
+      hostPath:
+        path: ${nats_js_store_dir}
+        type: DirectoryOrCreate
+  containers:
+    - name: nats
+      image: ${nats_image}
+      args:
+      - --config
+      - /etc/nats.conf
+      volumeMounts:
+      - { name: config, mountPath: /etc/nats.conf, readOnly: true }
+      - { name: jetstream, mountPath: /var/lib/nats }

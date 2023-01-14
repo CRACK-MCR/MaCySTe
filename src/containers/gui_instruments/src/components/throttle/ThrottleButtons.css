@@ -1,0 +1,69 @@
+@keyframes flashgreen {
+  from {
+    border-color: gray;
+  }
+
+  to {
+    border-color: darkgreen;
+  }
+}
+
+@keyframes flashred {
+  from {
+    border-color: gray;
+  }
+
+  to {
+    border-color: darkred;
+  }
+}
+
+@keyframes flashwhite {
+  from {
+    color: black;
+  }
+
+  to {
+    color: darkgrey;
+  }
+}
+
+.forwards {
+  color: darkgreen;
+}
+
+.backwards {
+  color: darkred;
+}
+
+.forwards.active {
+  animation-name: flashgreen;
+}
+
+.backwards.active {
+  animation-name: flashred;
+}
+
+.zero.active {
+  animation-name: flashwhite;
+  animation-duration: 2s;
+}
+
+hr {
+  margin: 2px 0px;
+  padding: 0px;
+}
+
+.active {
+  animation-duration: 0.5s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+button {
+  background: radial-gradient(hsl(0, 0%, 90%), hsl(0, 0%, 70%));
+  border: 2px gray solid;
+  border-radius: 3px;
+  font-family: monospace;
+}

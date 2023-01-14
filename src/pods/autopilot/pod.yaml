@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-autopilot
+spec:
+  containers:
+    - name: autopilot
+      image: ${autopilot_image}
+      env:
+      - { name: NATS_URL, value: "${nats_url}" }
+      - { name: NMEA_HOST, value: "${nmea_host}" }
+      - { name: NMEA_PORT, value: "${nmea_port}" }
+      - { name: RUDDER_PLC_HOST, value: "${rudder_plc_host}" }
+      - { name: RUDDER_PLC_PORT, value: "${rudder_plc_port}" }
+      - { name: RUDDER_PLC_ADDR, value: "${rudder_plc_addr}" }
+      - { name: THROTTLE_L_PLC_HOST, value: "${telegraph_l_plc_host}" }
+      - { name: THROTTLE_L_PLC_PORT, value: "${telegraph_l_plc_port}" }
+      - { name: THROTTLE_L_PLC_ADDR, value: "${telegraph_l_plc_addr}" }
+      - { name: THROTTLE_R_PLC_HOST, value: "${telegraph_r_plc_host}" }
+      - { name: THROTTLE_R_PLC_PORT, value: "${telegraph_r_plc_port}" }
+      - { name: THROTTLE_R_PLC_ADDR, value: "${telegraph_r_plc_addr}" }

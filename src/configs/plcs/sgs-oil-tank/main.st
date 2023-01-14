@@ -1,0 +1,71 @@
+FUNCTION Registers_as_Real : REAL
+  VAR_INPUT
+    LW : UINT;
+    HW : UINT;
+  END_VAR
+
+  {{
+  union words_to_real {
+    uint16_t i[2];
+    float f;
+  }w2r;
+
+  w2r.i[0] = LW;
+  w2r.i[1] = HW;
+
+  return w2r.f;
+  }}
+END_FUNCTION
+
+FUNCTION_BLOCK setAlarm
+  VAR_INPUT
+    LW : UINT;
+    HW : UINT;
+  END_VAR
+  VAR_OUTPUT
+    ALARM : UINT;
+  END_VAR
+  VAR
+    OIL_LEVEL : REAL;
+  END_VAR
+
+  OIL_LEVEL := Registers_as_Real(LW, HW);
+
+  IF (OIL_LEVEL < 30.0) THEN
+    ALARM := BOOL_TO_UINT(TRUE);
+  ELSE
+    ALARM := BOOL_TO_UINT(FALSE);
+  END_IF;
+END_FUNCTION_BLOCK
+
+PROGRAM tank
+  VAR_EXTERNAL
+    OIL_LEVEL_1 : UINT;
+    OIL_LEVEL_2 : UINT;
+    LOW_LEVEL_EXPANSION_TANK_ALARM : UINT;
+  END_VAR
+  VAR
+    setAlarm0 : setAlarm;
+  END_VAR
+
+  setAlarm0(LW := OIL_LEVEL_1, HW := OIL_LEVEL_2);
+  LOW_LEVEL_EXPANSION_TANK_ALARM := setAlarm0.ALARM;
+END_PROGRAM
+
+
+CONFIGURATION Config0
+
+  RESOURCE Res0 ON PLC
+    VAR_GLOBAL
+      OIL_LEVEL_1 AT %IW100 : UINT;
+      OIL_LEVEL_2 AT %IW101 : UINT;
+      OIL_LEVEL_P1_1 AT %IW102 : UINT;
+      OIL_LEVEL_P1_2 AT %IW103 : UINT;
+      OIL_LEVEL_P2_1 AT %IW104 : UINT;
+      OIL_LEVEL_P2_2 AT %IW105 : UINT;
+      LOW_LEVEL_EXPANSION_TANK_ALARM AT %QW100 : UINT;
+    END_VAR
+    TASK task0(INTERVAL := T#20ms,PRIORITY := 0);
+    PROGRAM instance0 WITH task0 : tank;
+  END_RESOURCE
+END_CONFIGURATION

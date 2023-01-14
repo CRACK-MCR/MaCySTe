@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-websocket-to-websocket
+spec:
+  containers:
+    - name: proxy
+      image: ${websocket_to_websocket_image}

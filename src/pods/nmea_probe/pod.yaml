@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-nmea-probe
+spec:
+  containers:
+  - name: probe
+    image: ${nmea_probe_image}
+    env:
+    - { name: OPENSEARCH_URL, value: "${opensearch_url}" }
+    - { name: NMEA_HOST, value: "${nmea_host}" }
+    - { name: NMEA_PORT, value: "${nmea_port}" }

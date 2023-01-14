@@ -1,0 +1,2 @@
+      - { name: MENU_ATTACK_TEXT, value: "Attack GUI" }
+      - { name: MENU_ATTACK_URL, value: "http://${gui_attack_pod_gui_attack_mgmt0_ip}:3000" }

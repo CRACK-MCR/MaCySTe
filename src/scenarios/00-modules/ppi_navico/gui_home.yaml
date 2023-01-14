@@ -1,0 +1,2 @@
+      - { name: MENU_NAVICO_PPI_TEXT, value: "Radar PPI (Navico)" }
+      - { name: MENU_NAVICO_PPI_URL, value: "http://${ppi_navico_pod_opencpn_mgmt0_ip}:8080/vnc.html?autoconnect=1&resize=scale" }

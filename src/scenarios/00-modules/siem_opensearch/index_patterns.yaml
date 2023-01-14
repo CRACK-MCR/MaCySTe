@@ -1,0 +1,4 @@
+    - name: INDEX_PATTERNS
+      value: >-
+        modbus-*:@timestamp
+        nmea-*:@timestamp

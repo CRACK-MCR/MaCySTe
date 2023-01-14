@@ -1,0 +1,2 @@
+      - { name: MENU_ASTERIX_PPI_TEXT, value: "Radar PPI (ASTERIX)" }
+      - { name: MENU_ASTERIX_PPI_URL, value: "http://${ppi_asterix_pod_gui_asterix_mgmt0_ip}:3000" }

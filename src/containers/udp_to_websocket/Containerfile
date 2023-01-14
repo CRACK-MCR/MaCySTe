@@ -1,0 +1,13 @@
+ARG RUST_IMAGE
+FROM ${RUST_IMAGE}
+
+COPY . /usr/src/udp-to-websocket
+
+WORKDIR /usr/src/udp-to-websocket
+RUN \
+  --mount=type=cache,dst=/root/.cargo \
+  --mount=type=cache,dst=/usr/src/udp-to-websocket/target \
+  cargo install --path .
+
+WORKDIR /srv
+CMD [ "udp-to-websocket" ]

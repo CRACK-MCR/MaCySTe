@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>MaCySTe</title>
+
+  <link rel="stylesheet" href="style.css"/>
+  <script src="script.js"></script>
+</head>
+<body>
+  <header>
+    <h1>MaCySTe</h1>
+    <nav id="buttons">
+      <div id="buttons-placeholder">... loading available elements ...</div>
+      <button id="2x1-grid-button" onclick="navbtn(this)" data-url="/2x1.html">2x1 grid</button>
+      <button id="2x2-grid-button" onclick="navbtn(this)" data-url="/2x2.html">2x2 grid</button>
+    </nav>
+  </header>
+  <nav id="controls">
+    <div>MaCySTe</div>
+    <div onclick="closeHeader()" id="controls-close">Close header</div>
+    <div onclick="collapseHeader()" id="controls-collapse">Collapse header</div>
+    <div id="controls-info">CHOOSE A DISPLAY</div>
+    <div id="controls-tip" style="display: none;"></div>
+  </nav>
+  <div id="placeholder">
+    NO CONNECTION SELECTED
+  </div>
+  <iframe id="main-iframe" class="hidden" allow="fullscreen"></iframe>
+</body>
+</html>

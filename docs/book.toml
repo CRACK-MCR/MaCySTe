@@ -1,0 +1,14 @@
+[book]
+authors = [
+    "Giacomo Longo",
+    "Alessandro Orlich",
+    "Enrico Russo",
+]
+language = "en"
+multilingual = false
+src = "src"
+title = "MaCySTe reference manual"
+description = "Manual for the Maritime Cyber Security Testbed (MaCySTe)"
+
+[output.html]
+mathjax-support = true

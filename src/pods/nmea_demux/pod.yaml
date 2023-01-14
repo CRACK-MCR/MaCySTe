@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-nmea-${demux_name}
+spec:
+  containers:
+    - name: demux
+      image: ${nmea_mux_demux_image}
+      args:
+      - demux
+      env:
+      - { name: NATS_URL, value: "${nats_url}" }
+      - { name: DEMUX_SEND_ADDRESS, value: "${demux_send_address}" }
+      - { name: DEMUX_SENTENCE, value: "${demux_sentence}" }
+      - { name: DEMUX_SENDER, value: "${demux_sender}" }
+      - { name: DEMUX_MULTICAST_IF, value: "${demux_multicast_if}" }

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-radar-converter-${radar_converter_name}
+spec:
+  containers:
+    - name: radar-converter
+      image: ${radar_converter_image}
+      securityContext:
+        capabilities:
+          add:
+          - NET_ADMIN
+          - NET_RAW
+      env:
+      - { name: IMAGE_MULTICAST_IF, value: "${image_multicast_if}" }
+      - { name: BIND_INTERFACE, value: "${bind_interface}" }
+      - { name: NATS_URL, value: "${nats_url}" }
+      - { name: BUFFER_SIZE, value: "${buffer_size}" }
+      - { name: PROTOCOL, value: "${protocol}" }
+      - { name: ASTERIX_ADDRESS, value: "${asterix_address}" }
+      - { name: ASTERIX_PORT, value: "${asterix_port}" }

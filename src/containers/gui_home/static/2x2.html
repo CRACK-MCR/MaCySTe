@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>MaCySTe multiview</title>
+  <style>
+    html, body {
+      margin: 0%;
+      padding: 0%;
+    }
+    html {
+      height: 100%;
+    }
+    body {
+      min-height: 100%;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      align-items: stretch;
+      justify-items: stretch;
+    }
+    iframe {
+      border: 2px solid #323232;
+    }
+    iframe:hover {
+      cursor: move;
+    }
+    @keyframes dragging {
+      0% {
+        border: 2px solid black;
+      }
+      100% {
+        border: 2px solid white;
+      }
+    }
+    iframe.dragging {
+      animation: dragging .3s infinite ease-in-out alternate;
+    }
+  </style>
+  <script>
+    let hOffset = 0
+    let wOffset = 0
+    let dragging = false
+    function recalcGrid() {
+      document.body.style.gridTemplateRows = `calc(50vh + ${hOffset}px) 1fr`
+      document.body.style.gridTemplateColumns = `calc(50vw + ${wOffset}px) 1fr`
+      console.debug('Recalculated grid', document.body.style.gridTemplateRows, document.body.style.gridTemplateColumns)
+    }
+    function setDragging(value) {
+      dragging = value
+      if (dragging) {
+        Array.from(document.getElementsByTagName('iframe')).forEach(elem => elem.classList.add('dragging'))
+      } else {
+        Array.from(document.getElementsByTagName('iframe')).forEach(elem => elem.classList.remove('dragging'))
+      }
+    }
+    function onPointerMove(event) {
+      if (dragging) {
+        hOffset += event.movementY
+        wOffset += event.movementX
+        recalcGrid()
+        console.debug('Dragged', hOffset, wOffset)
+        console.debug(event)
+      }
+    }
+    function onPointerUp(event) {
+      setDragging(false)
+      event.target.releasePointerCapture(event.pointerId)
+      console.debug('Stopped dragging')
+    }
+    function onPointerDown(event) {
+      setDragging(true)
+      event.target.setPointerCapture(event.pointerId)
+      console.debug('Started dragging')
+    }
+  </script>
+</head>
+<body>
+  <iframe src="/index.html" onpointerdown="onPointerDown(event)" onpointerup="onPointerUp(event)" onpointermove="onPointerMove(event)"></iframe>
+  <iframe src="/index.html" onpointerdown="onPointerDown(event)" onpointerup="onPointerUp(event)" onpointermove="onPointerMove(event)"></iframe>
+  <iframe src="/index.html" onpointerdown="onPointerDown(event)" onpointerup="onPointerUp(event)" onpointermove="onPointerMove(event)"></iframe>
+  <iframe src="/index.html" onpointerdown="onPointerDown(event)" onpointerup="onPointerUp(event)" onpointermove="onPointerMove(event)"></iframe>
+</body>
+</html>

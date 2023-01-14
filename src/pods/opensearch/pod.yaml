@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: macyste-opensearch
+spec:
+  volumes:
+    - name: opensearch
+      hostPath:
+        path: ${siem_opensearch_pod_opensearch_state_dir_opensearch}
+        type: DirectoryOrCreate
+  containers:
+  - name: dashboards
+    image: ${opensearch_dashboards_image}
+  - name: db
+    image: ${opensearch_image}
+    env:
+    - { name: discovery.type, value: single-node }
+  - name: preseeder
+    image: ${opensearch_preseeder_image}
+    env:
+    - { name: OPENSEARCH_URL, value: http://127.0.0.1:5601 }

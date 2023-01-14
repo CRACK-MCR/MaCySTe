@@ -1,0 +1,69 @@
+html, body {
+  padding: 0%;
+  margin: 0%;
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  background-color: #101010;
+  color: red;
+  font-family: monospace;
+  text-transform: uppercase;
+  font-size: 15px;
+  display: flex;
+  flex-direction: column;
+
+  width: 100vw;
+  height: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+main {
+  flex: 1;
+  position: relative;
+}
+
+main > * {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0%;
+  top: 0%;
+}
+main > div {
+  padding: 5px;
+  z-index: 2;
+}
+#course-canvas {
+  z-index: 1;
+}
+#radar-canvas {
+  z-index: 0;
+}
+#status {
+  color: darkgrey;
+  top: calc(100% - 36px);
+  padding: 5px;
+}
+
+.control-row {
+  color: red;
+  display: flex;
+  flex-direction: row;
+  justify-content: baseline;
+  align-items: baseline;
+  gap: 5px;
+  padding-left: 5px;
+}
+
+.control-row > button {
+  background: transparent;
+  border: red 2px solid;
+  color: red;
+  padding-left: 5px;
+  padding-right: 5px;
+}

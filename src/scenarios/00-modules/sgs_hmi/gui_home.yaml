@@ -1,0 +1,2 @@
+      - { name: MENU_SGS_HMI_TEXT, value: "SGS HMI" }
+      - { name: MENU_SGS_HMI_URL, value: "http://${sgs_hmi_pod_fuxa_mgmt0_ip}:1881" }
