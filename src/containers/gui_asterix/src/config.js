@@ -3,6 +3,9 @@ export const ConfigNATSWebSocketUrl = '/config/env/NATS_WS_URL'
 
 export async function getConfig(url) {
   const resp = await fetch(url)
+  if (resp.status !== 200) {
+    throw new Error("Error in getting config, response status is " + resp.status)
+  }
   const conf = await resp.text()
   console.debug('Got config', url, conf)
   return conf

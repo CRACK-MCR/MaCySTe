@@ -9,15 +9,14 @@ import { sendToNATS } from "./nats";
 const radarRanges = [ 0.5, 1.0, 1.5, 3.0, 6.0, 12.0, 24.0 ]
 
 // Shared state
+let currentGain = 1.0
+let maxGainEnabled = true
 let currentRadarRange = 3
 let radarCanvas = undefined
 let statusLabel = undefined
 
 // Radar math helpers
-const calculate360Complement = (angle) => {
-  while (angle < 0) angle += 360.0
-  return angle % 360.0
-}
+const approxEq = (a, b) => Math.abs(a - b) < 1e-9
 
 const deg2rad = angle => angle * Math.PI / 180.0
 
@@ -67,18 +66,18 @@ function drawRadarCell(canvas, begAngle, endAngle, begNormalizedDistance, endNor
     x: centerX + Math.cos(endAngleRad) * begPixelDistance,
     y: centerY + Math.sin(endAngleRad) * begPixelDistance,
   })
-  const getBLCorner = () => ({
-    x: centerX + Math.cos(begAngleRad) * begPixelDistance,
-    y: centerY + Math.sin(begAngleRad) * begPixelDistance,
-  })
+  // const getBLCorner = () => ({
+  //   x: centerX + Math.cos(begAngleRad) * begPixelDistance,
+  //   y: centerY + Math.sin(begAngleRad) * begPixelDistance,
+  // })
   const getTLCorner = () => ({
     x: centerX + Math.cos(begAngleRad) * endPixelDistance,
     y: centerY + Math.sin(begAngleRad) * endPixelDistance,
   })
-  const getTRCorner = () => ({
-    x: centerX + Math.cos(endAngleRad) * endPixelDistance,
-    y: centerY + Math.sin(endAngleRad) * endPixelDistance,
-  })
+  // const getTRCorner = () => ({
+  //   x: centerX + Math.cos(endAngleRad) * endPixelDistance,
+  //   y: centerY + Math.sin(endAngleRad) * endPixelDistance,
+  // })
 
   // Draw
   const ctx = canvas.getContext('2d')
@@ -149,6 +148,40 @@ const drawRadarBase = (canvas) => {
   drawRadarCell(canvas, 0.0, 360.0, 0.0, 1.0, 0.0)
   drawRadarIndicators(canvas)
   console.debug('Redrawn radar base')
+}
+
+// Gain
+function syncGainLabel() {
+  const gainLabel = document.getElementById('gain-label')
+  if (maxGainEnabled) {
+    gainLabel.textContent = "Gain MAX"
+  } else {
+    const gainString = 'Gain ' + currentGain.toFixed(2)
+    gainLabel.textContent = gainString
+  }
+}
+function maxGain() {
+  currentGain = 1.0
+  maxGainEnabled = !maxGainEnabled
+  syncGainLabel()
+}
+function decreaseGain() {
+  if (maxGainEnabled) {
+    maxGainEnabled = false
+    currentGain = 1.0
+  } else {
+    currentGain -= 0.1
+  }
+  syncGainLabel()
+}
+function increaseGain() {
+  if (maxGainEnabled) {
+    maxGainEnabled = false
+    currentGain = 1.0
+  } else {
+    currentGain += 0.1
+  }
+  syncGainLabel()
 }
 
 // Range
@@ -427,6 +460,18 @@ async function onASTERIX(data) {
       }
     }
   }
+
+  // Apply gain
+  if (maxGainEnabled) {
+    videoCells = videoCells.map(x => x > 0.0 ? 1.0 : 0.0)
+  } else if (currentGain !== 0.0) {
+    videoCells = videoCells.map(x => {
+      const newX = x * currentGain
+      if (newX > 1.0) return 1.0
+      return newX
+    })
+  }
+
   // Time of Day
   let timeOfDay = undefined
   if (hasTimeOfDay) {
@@ -434,21 +479,105 @@ async function onASTERIX(data) {
     offset += 3
   }
 
-  // Draw radar
+  // Zero out radar
   drawRadarCell(radarCanvas, begAzimuth, endAzimuth, 0.0, 1.0, 0.0)
+
+  // Calculate cells to draw
   const rangeMeters = radarRanges[currentRadarRange] * 1852
+
+  const cellsToDraw = []
   for (let i = 0; i < videoCells.length; i++) {
-    if (videoCells[i] === 0.0) {
+    if (approxEq(videoCells[i], 0.0)) continue
+
+    let begDistance = (startRange + i) * cellLength
+    if (begDistance > rangeMeters) break
+    let endDistance = (startRange + i + 1) * cellLength
+
+    for (let lookahead = 16; lookahead > 0; lookahead--) {
+      if (i + lookahead < videoCells.length) continue
+      if (!videoCells.splice(i, i + lookahead).every(x => approxEq(x, videoCells[i]))) continue
+      endDistance = (startRange + i + lookahead + 1) * cellLength
+      i += lookahead
+    }
+
+    const begNormalizedDistance = begDistance / rangeMeters
+    const endNormalizedDistance = endDistance / rangeMeters
+    cellsToDraw.push({ begAzimuth, endAzimuth, begNormalizedDistance, endNormalizedDistance, echoStrength: videoCells[i] })
+  }
+
+  /*
+  const cellsToDraw = []
+  for (let i = 0; i < videoCells.length; i++) {
+    if (approxEq(videoCells[i], 0.0)) {
       continue
     }
     const begDistance = (startRange + i) * cellLength
     const endDistance = (startRange + i + 1) * cellLength
     const begNormalizedDistance = begDistance / rangeMeters
     if (begNormalizedDistance > 1.0) {
-      continue
+      break
     }
     const endNormalizedDistance = endDistance / rangeMeters
-    drawRadarCell(radarCanvas, begAzimuth, endAzimuth, begNormalizedDistance, endNormalizedDistance, 1.0)
+
+    cellsToDraw.push({ begAzimuth, endAzimuth, begNormalizedDistance, endNormalizedDistance, echoStrength: videoCells[i] })
+  }
+
+  // Optimize
+  for (let i = 0; i < cellsToDraw.length; i++) {
+    // Four cells ahead
+    if (
+      i+4 < cellsToDraw.length && 
+      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+1].echoStrength) &&
+      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+2].echoStrength) &&
+      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+3].echoStrength) &&
+      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+4].echoStrength) &&
+      approxEq(cellsToDraw[i].endNormalizedDistance, cellsToDraw[i+1].begNormalizedDistance) &&
+      approxEq(cellsToDraw[i+1].endNormalizedDistance, cellsToDraw[i+2].begNormalizedDistance) &&
+      approxEq(cellsToDraw[i+2].endNormalizedDistance, cellsToDraw[i+3].begNormalizedDistance) &&
+      approxEq(cellsToDraw[i+3].endNormalizedDistance, cellsToDraw[i+4].begNormalizedDistance)
+    ) {
+      cellsToDraw[i].endNormalizedDistance = cellsToDraw[i+4].endNormalizedDistance
+      cellsToDraw.splice(i+1, 4)
+    }
+    // Three cells ahead
+    else if (
+      i+3 < cellsToDraw.length && 
+      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+1].echoStrength) &&
+      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+2].echoStrength) &&
+      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+3].echoStrength) &&
+      approxEq(cellsToDraw[i].endNormalizedDistance, cellsToDraw[i+1].begNormalizedDistance) &&
+      approxEq(cellsToDraw[i+1].endNormalizedDistance, cellsToDraw[i+2].begNormalizedDistance) &&
+      approxEq(cellsToDraw[i+2].endNormalizedDistance, cellsToDraw[i+3].begNormalizedDistance)
+    ) {
+      cellsToDraw[i].endNormalizedDistance = cellsToDraw[i+3].endNormalizedDistance
+      cellsToDraw.splice(i+1, 3)
+    }
+    // Two cells ahead
+    else if (
+      i+2 < cellsToDraw.length && 
+      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+1].echoStrength) &&
+      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+2].echoStrength) &&
+      approxEq(cellsToDraw[i].endNormalizedDistance, cellsToDraw[i+1].begNormalizedDistance) &&
+      approxEq(cellsToDraw[i+1].endNormalizedDistance, cellsToDraw[i+2].begNormalizedDistance)
+    ) {
+      cellsToDraw[i].endNormalizedDistance = cellsToDraw[i+2].endNormalizedDistance
+      cellsToDraw.splice(i+1, 2)
+    }
+    // One cell ahead
+    else if (
+      i+1 < cellsToDraw.length &&
+      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+1].echoStrength) &&
+      approxEq(cellsToDraw[i].endNormalizedDistance, cellsToDraw[i+1].begNormalizedDistance)
+    ) {
+      cellsToDraw[i].endNormalizedDistance = cellsToDraw[i+1].endNormalizedDistance
+      cellsToDraw.splice(i+1, 1)
+    }
+  }
+  */
+
+  // Draw radar cells
+  for (const cellToDraw of cellsToDraw) {
+    drawRadarCell(radarCanvas, cellToDraw.begAzimuth, cellToDraw.endAzimuth, cellToDraw.begNormalizedDistance, cellToDraw.endNormalizedDistance, cellToDraw.echoStrength)
   }
 }
 
@@ -460,6 +589,9 @@ document.addEventListener('DOMContentLoaded', _ => {
   // Bind event observers
   document.getElementById('decrease-range').addEventListener('click', () => decreaseRange())
   document.getElementById('increase-range').addEventListener('click', () => increaseRange())
+  document.getElementById('decrease-gain').addEventListener('click', () => decreaseGain())
+  document.getElementById('increase-gain').addEventListener('click', () => increaseGain())
+  document.getElementById('max-gain').addEventListener('click', () => maxGain())
   radarCanvas.addEventListener('canvas-resize', _ => {
     drawRadarBase(radarCanvas)
   })
@@ -473,6 +605,7 @@ document.addEventListener('DOMContentLoaded', _ => {
   new ResizeObserver(handleCanvasResize).observe(radarCanvas)
 
   // Perform initial sync
+  syncGainLabel()
   syncRangeLabel()
 
   // Connect to WebSocket
@@ -494,5 +627,6 @@ document.addEventListener('DOMContentLoaded', _ => {
       onASTERIX(m.data)
     }
   }
-  getConfigAndThen(ConfigASTERIXWebSocketUrl, setupWS)
+  setupWS('ws://127.0.0.1:9090/ASTERIX/BINARY')
+  //getConfigAndThen(ConfigASTERIXWebSocketUrl, setupWS)
 })
