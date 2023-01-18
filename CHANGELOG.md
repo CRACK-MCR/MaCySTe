@@ -1,3 +1,7 @@
+# v1.1.1
+
+- MaCySTe containers and book are now automatically build in Continuous Integration
+
 # v1.1.0
 
 - ASTERIX PPI Gain is now selectable

@@ -1,5 +1,9 @@
 # MaCySTe
 
+[![Containers](https://github.com/CRACK-MCR/MaCySTe/actions/workflows/containers.yml/badge.svg?branch=main)](https://github.com/CRACK-MCR/MaCySTe/actions/workflows/containers.yml)
+[![Docs](https://github.com/CRACK-MCR/MaCySTe/actions/workflows/docs.yml/badge.svg)](https://github.com/CRACK-MCR/MaCySTe/actions/workflows/docs.yml)
+![License](./docs/src/images/license-badge.svg)
+
 Maritime Cyber Security TEstbed (MaCySTe) is a toolkit for cyber security research on ships.
 
 ![MaCySTe](./docs/src/images/home.png)
