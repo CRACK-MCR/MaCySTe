@@ -8,10 +8,14 @@ $(if $(1),$(call reverse,$(wordlist 2,$(words $(1)),$(1)))) $(firstword $(1))
 endef
 
 # Defaults
+PODMAN ?= sudo podman
+
 CONTAINER_IMAGE_TAG ?= latest
 CONTAINER_IMAGE_PREFIX ?= macyste
 
+ifndef CI
 CONTAINER_BUILD_ARGS += --pull=newer
+endif
 
 CONTAINER_BUILD_ARGS += --build-arg FEDORA_IMAGE=registry.fedoraproject.org/fedora:37
 CONTAINER_BUILD_ARGS += --build-arg JAVASCRIPT_IMAGE=docker.io/library/node:19.4.0
@@ -143,7 +147,7 @@ build-container-%:
 # Build prerequisites
 	$(foreach prereq,$(file < containers/$(NAME)/prerequisites.Makefile), $(MAKE) build-container-$(prereq))
 # Build image
-	sudo podman build $(CONTAINER_BUILD_ARGS) -t $(IMAGE_NAME) containers/$(NAME)
+	$(PODMAN) build $(CONTAINER_BUILD_ARGS) -t $(IMAGE_NAME) containers/$(NAME)
 
 REGISTRY_ARGS :=
 ifdef REGISTRY_USER
@@ -167,15 +171,15 @@ ifndef REGISTRY
 	$(info No REGISTRY is defined)
 	$(MAKE) build-container-$(NAME)
 else
-	if sudo podman image pull $(REGISTRY_ARGS) docker://$(REGISTRY)/$(IMAGE_NAME); then \
-		sudo podman image tag $(REGISTRY)/$(IMAGE_NAME) $(IMAGE_NAME); \
+	if $(PODMAN) image pull $(REGISTRY_ARGS) docker://$(REGISTRY)/$(IMAGE_NAME); then \
+		$(PODMAN) image tag $(REGISTRY)/$(IMAGE_NAME) $(IMAGE_NAME); \
 	else \
 		$(MAKE) build-container-$(NAME); \
 	fi
 endif
 
 pull-extra-images:
-	$(foreach image,$(EXTRA_IMAGES), sudo podman image list -n --format '{{.Repository}}:{{.Tag}}' | grep -q '$(image)' || sudo podman pull $(image);)
+	$(foreach image,$(EXTRA_IMAGES), $(PODMAN) image list -n --format '{{.Repository}}:{{.Tag}}' | grep -q '$(image)' || $(PODMAN) pull $(image);)
 
 .PHONY: push push-container-%
 
@@ -187,7 +191,7 @@ push-container-%:
 ifndef REGISTRY
 	$(error No REGISTRY is defined)
 endif
-	sudo podman image push $(REGISTRY_ARGS) $(IMAGE_NAME) docker://$(REGISTRY)/$(IMAGE_NAME)
+	$(PODMAN) image push $(REGISTRY_ARGS) $(IMAGE_NAME) docker://$(REGISTRY)/$(IMAGE_NAME)
 
 
 #
@@ -225,7 +229,7 @@ up-net-%: up-dummy
 	$(if $($(NAME)_NET_NAME),,$(error network $(NAME) has no name))
 	$(if $($(NAME)_NET_CIDR),,$(error network $(NAME) has no cidr))
 	$(if $($(NAME)_NET_DRIVER),,$(error network $(NAME) has no driver))
-	sudo podman network create \
+	$(PODMAN) network create \
 		--driver $($(NAME)_NET_DRIVER) \
 		$(if $(filter macvlan,$($(NAME)_NET_DRIVER)),--opt parent=dummy0) \
 		$(if $($(NAME)_NET_INTERNAL),--internal) \
@@ -235,7 +239,7 @@ up-net-%: up-dummy
 down-net-%: down-dummy
 	$(eval NAME := $(subst down-net-,,$@))
 	$(if $($(NAME)_NET_NAME),,$(error network $(NAME) has no name))
-	sudo podman network rm -f $($(NAME)_NET_NAME) || true
+	$(PODMAN) network rm -f $($(NAME)_NET_NAME) || true
 
 #
 # Scenarios
@@ -313,7 +317,7 @@ allocate-scenario-ip-% up-scenario-% down-scenario-%:
 			@cat $(foreach manifest,$($(NAME)_pod_$(pod)_manifests),$(manifest) ) \
 			| $(ENVSUBST_ARGS) envsubst \
 			| tee /dev/stderr \
-			| sudo podman kube play --replace - $($(NAME)_pod_$(pod)_network_args) \
+			| $(PODMAN) kube play --replace - $($(NAME)_pod_$(pod)_network_args) \
 		) \
 	)
 	$(if $(IS_DOWN), \
@@ -321,7 +325,7 @@ allocate-scenario-ip-% up-scenario-% down-scenario-%:
 			@cat $(foreach manifest,$($(NAME)_pod_$(pod)_manifests),$(manifest) ) \
 			| $(ENVSUBST_ARGS) envsubst \
 			| tee /dev/stderr \
-			| sudo podman kube down - || true \
+			| $(PODMAN) kube down - || true \
 		) \
 	)
 

@@ -1,6 +1,6 @@
 .PHONY: install-mdbook build serve open push
 
-MDBOOK := $(HOME)/.cargo/bin/mdbook
+MDBOOK := $(shell command -v mdbook || true)
 
 install-mdbook:
 	@[ -x "$(MDBOOK)" ] || cargo install mdbook

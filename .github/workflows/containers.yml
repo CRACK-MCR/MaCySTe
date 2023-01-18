@@ -1,0 +1,73 @@
+name: Containers
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - src/containers/**
+
+concurrency:
+  group: "containers"
+  cancel-in-progress: true
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-22.04
+    permissions:
+      packages: write
+    strategy:
+      matrix:
+        container:
+          - autopilot
+          - fuxa
+          - fuxa_init
+          - gui_asterix
+          - gui_attack
+          - gui_home
+          - gui_instruments
+          - malware_ship_side
+          - mini_router
+          - modbus_nats_kv
+          - modbus_probe
+          - nmea_mux_demux
+          - nmea_probe
+          - opencpn
+          - openplc
+          - opensearch_preseeder
+          - radar_converter
+          - spa_hoster
+          - steering_gear_system
+          - udp_to_websocket
+          - websocket_to_websocket
+    steps:
+    - name: Pull
+      uses: actions/checkout@v3
+    - name: Remove mount cache directives
+      run: |
+        for ctrfile in $(grep -lr mount=type=cache src/containers/ | uniq); do
+          echo "Removing cache mount from $ctrfile"
+          sed -i 's/--mount=type=cache,.* //' "$ctrfile"
+        done
+    - name: Cache
+      uses: actions/cache@v3
+      with:
+        key: ${{ runner.os }}-${{ matrix.container }}
+        path: |
+          /var/lib/containers/**
+    - name: Get Podman version
+      run: |
+        podman --version
+    - name: Get Podman args
+      run: |
+        podman --help
+        podman build --help
+        podman push --help
+    - name: Login to ghcr
+      run: |
+        sudo podman login --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} ghcr.io
+    - run: |
+        make build-container-${{ matrix.container }} CI=1 CONTAINER_IMAGE_TAG=latest PODMAN='sudo podman --cgroup-manager=cgroupfs --events-backend=none'
+        make push-container-${{ matrix.container }} CI=1 CONTAINER_IMAGE_TAG=latest
+    - run: |
+        make push-container-${{ matrix.container }} CI=1 CONTAINER_IMAGE_TAG=${{ github.ref_name }}
+      if: github.ref_type == 'tag'

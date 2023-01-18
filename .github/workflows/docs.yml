@@ -1,0 +1,46 @@
+name: Docs
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - docs/src/**
+      - docs/book.toml
+  workflow_dispatch:
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions:
+      pages: write
+    steps:
+    - name: Pull
+      uses: actions/checkout@v3
+    - name: Setup mdbook
+      uses: peaceiris/actions-mdbook@v1
+      with:
+        mdbook-version: 'latest'
+    - name: Build
+      run: make -C docs CI=1 build
+    - name: Upload
+      uses: actions/upload-pages-artifact@v1
+      with:
+        path: docs/book
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy to pages
+      id: deployment
+      uses: actions/deploy-pages@v1
