@@ -69,11 +69,21 @@ async function loadAddons() {
     .filter(element => element.tagName === 'BUTTON')
     .map(element => element.textContent)
     .sort((a, b) => {
-      if (a === '2x1 grid' && b === '2x2 grid') return -1
-      else if (a === '2x2 grid' && b === '2x1 grid') return 1
-      else if (a === '2x1 grid' || a === '2x2 grid') return 1
-      else if (b === '2x1 grid' || b === '2x2 grid') return -1
-      else return a.localeCompare(b)
+      const aIsGrid = a.endsWith(' grid')
+      const bIsGrid = b.endsWith(' grid')
+      if (aIsGrid && bIsGrid) {
+        const gridRe = /([0-9]+)x([0-9]+).*/
+        const aMatch = gridRe.exec(a)
+        const bMatch = gridRe.exec(b)
+        const aVal = parseInt(aMatch[1]) * parseInt(aMatch[2])
+        const bVal = parseInt(bMatch[1]) * parseInt(bMatch[2])
+        if (aVal < bVal) return -1
+        if (aVal > bVal) return  1
+        return 0
+      }
+      if (aIsGrid && !bIsGrid) return 1
+      if (!aIsGrid && bIsGrid) return -1
+      return a.localeCompare(b)
     })
   Array.from(document.getElementById('buttons').children)
     .filter(element => element.tagName === 'BUTTON')

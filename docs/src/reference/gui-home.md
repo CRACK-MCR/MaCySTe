@@ -26,6 +26,14 @@ To move the center divisor click and drag it.
 
 ![Side-by-side view](../images/gui-2x1.png)
 
+### 3x1 grid
+
+By clicking on the __3x1 grid__ on the top of the screen, the MaCySTe GUI can be split into three quadrants.
+
+Each of the diplays inside of this side by side view can be operated as an indipendent GUI instance.
+
+![Side-by-side view](../images/gui-3x1.png)
+
 ### 2x2 grid
 
 By clicking on the __2x2 grid__ button on the top of the screen, the MaCySTe GUI can be split into four resizable quadrants.

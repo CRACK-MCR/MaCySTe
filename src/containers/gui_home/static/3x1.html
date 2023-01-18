@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>MaCySTe multiview</title>
+  <style>
+    html, body {
+      margin: 0%;
+      padding: 0%;
+    }
+    html {
+      height: 100%;
+    }
+    body {
+      min-height: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(1, 1fr);
+      align-items: stretch;
+      justify-items: stretch;
+    }
+    iframe {
+      border: 2px solid #323232;
+    }
+  </style>
+</head>
+<body>
+  <iframe id="l" src="/index.html"></iframe>
+  <iframe id="c" src="/index.html"></iframe>
+  <iframe id="r" src="/index.html"></iframe>
+</body>
+</html>
