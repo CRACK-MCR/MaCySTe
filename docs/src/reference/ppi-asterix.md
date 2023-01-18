@@ -6,6 +6,8 @@ The application listens on one websocket used to receive radar image under the f
 
 These two can be configured as environmental variables of the `spa_hoster`, namely `ASTERIX_WS_URL` and `NATS_WS_URL`.
 
-The radar picture is displayed in north up orientation.
+The radar picture is displayed in heading up orientation.
+
+The radar gain can be changed with the `+` and `-` buttons or set to maximum contrast mode by pressing `MAX`
 
 ![asterix-ppi](../images/asterix-ppi.png)

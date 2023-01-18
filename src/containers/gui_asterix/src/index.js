@@ -16,7 +16,7 @@ let radarCanvas = undefined
 let statusLabel = undefined
 
 // Radar math helpers
-const approxEq = (a, b) => Math.abs(a - b) < 1e-9
+const approxEq = (a, b) => Math.abs(a - b) < 1e-12
 
 const deg2rad = angle => angle * Math.PI / 180.0
 
@@ -393,6 +393,7 @@ async function onASTERIX(data) {
     if (resolutionBits !== 8) {
       throw new Error("Resolutions other than 8 bits are not supported")
     }
+
   }
 
   if (hasVideoBlockLowDataVolume) {
@@ -405,14 +406,9 @@ async function onASTERIX(data) {
           for (let j = 0; j < 4; j++) {
             const value = view.getUint8(offset)
             offset++
-            videoCells.push(value / 255)
+            videoCells.push(value / 255.0)
           }
           break;
-      }
-    }
-    if (videoCellsCount) {
-      while (videoCells.length > videoCellsCount) {
-        videoCells.pop()
       }
     }
   }
@@ -427,14 +423,9 @@ async function onASTERIX(data) {
           for (let j = 0; j < 64; j++) {
             const value = view.getUint8(offset)
             offset++
-            videoCells.push(value / 255)
+            videoCells.push(value / 255.0)
           }
           break;
-      }
-    }
-    if (videoCellsCount) {
-      while (videoCells.length > videoCellsCount) {
-        videoCells.pop()
       }
     }
   }
@@ -449,27 +440,30 @@ async function onASTERIX(data) {
           for (let j = 0; j < 256; j++) {
             const value = view.getUint8(offset)
             offset++
-            videoCells.push(value / 255)
+            videoCells.push(value / 255.0)
           }
           break;
       }
     }
-    if (videoCellsCount) {
-      while (videoCells.length > videoCellsCount) {
-        videoCells.pop()
-      }
+  }
+
+  // Rectify video cell length
+  if (videoCellsCount) {
+    while (videoCells.length > videoCellsCount) {
+      videoCells.pop()
     }
   }
 
   // Apply gain
-  if (maxGainEnabled) {
-    videoCells = videoCells.map(x => x > 0.0 ? 1.0 : 0.0)
-  } else if (currentGain !== 0.0) {
-    videoCells = videoCells.map(x => {
-      const newX = x * currentGain
-      if (newX > 1.0) return 1.0
-      return newX
-    })
+  for (let i = 0; i < videoCells.length; i++) {
+    if (maxGainEnabled) {
+      videoCells[i] = videoCells[i] > 0.0 ? 1.0 : 0.0
+    } else {
+      videoCells[i] *= currentGain
+      if (videoCells[i] > 1.0) {
+        videoCells[i] = 1.0
+      }
+    }
   }
 
   // Time of Day
@@ -487,93 +481,31 @@ async function onASTERIX(data) {
 
   const cellsToDraw = []
   for (let i = 0; i < videoCells.length; i++) {
-    if (approxEq(videoCells[i], 0.0)) continue
+
+    const echoStrength = videoCells[i]
+
+    if (approxEq(echoStrength, 0.0)) continue
 
     let begDistance = (startRange + i) * cellLength
     if (begDistance > rangeMeters) break
     let endDistance = (startRange + i + 1) * cellLength
 
-    for (let lookahead = 16; lookahead > 0; lookahead--) {
-      if (i + lookahead < videoCells.length) continue
-      if (!videoCells.splice(i, i + lookahead).every(x => approxEq(x, videoCells[i]))) continue
+    let didLookAhead = false
+    let lookahead = 1
+    while (i + lookahead < videoCells.length && approxEq(echoStrength, videoCells[i+lookahead])) {
+      lookahead++
+      didLookAhead = true
+    }
+    if (didLookAhead) {
       endDistance = (startRange + i + lookahead + 1) * cellLength
       i += lookahead
     }
 
     const begNormalizedDistance = begDistance / rangeMeters
     const endNormalizedDistance = endDistance / rangeMeters
-    cellsToDraw.push({ begAzimuth, endAzimuth, begNormalizedDistance, endNormalizedDistance, echoStrength: videoCells[i] })
-  }
 
-  /*
-  const cellsToDraw = []
-  for (let i = 0; i < videoCells.length; i++) {
-    if (approxEq(videoCells[i], 0.0)) {
-      continue
-    }
-    const begDistance = (startRange + i) * cellLength
-    const endDistance = (startRange + i + 1) * cellLength
-    const begNormalizedDistance = begDistance / rangeMeters
-    if (begNormalizedDistance > 1.0) {
-      break
-    }
-    const endNormalizedDistance = endDistance / rangeMeters
-
-    cellsToDraw.push({ begAzimuth, endAzimuth, begNormalizedDistance, endNormalizedDistance, echoStrength: videoCells[i] })
+    cellsToDraw.push({ begAzimuth, endAzimuth, begNormalizedDistance, endNormalizedDistance, echoStrength })
   }
-
-  // Optimize
-  for (let i = 0; i < cellsToDraw.length; i++) {
-    // Four cells ahead
-    if (
-      i+4 < cellsToDraw.length && 
-      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+1].echoStrength) &&
-      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+2].echoStrength) &&
-      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+3].echoStrength) &&
-      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+4].echoStrength) &&
-      approxEq(cellsToDraw[i].endNormalizedDistance, cellsToDraw[i+1].begNormalizedDistance) &&
-      approxEq(cellsToDraw[i+1].endNormalizedDistance, cellsToDraw[i+2].begNormalizedDistance) &&
-      approxEq(cellsToDraw[i+2].endNormalizedDistance, cellsToDraw[i+3].begNormalizedDistance) &&
-      approxEq(cellsToDraw[i+3].endNormalizedDistance, cellsToDraw[i+4].begNormalizedDistance)
-    ) {
-      cellsToDraw[i].endNormalizedDistance = cellsToDraw[i+4].endNormalizedDistance
-      cellsToDraw.splice(i+1, 4)
-    }
-    // Three cells ahead
-    else if (
-      i+3 < cellsToDraw.length && 
-      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+1].echoStrength) &&
-      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+2].echoStrength) &&
-      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+3].echoStrength) &&
-      approxEq(cellsToDraw[i].endNormalizedDistance, cellsToDraw[i+1].begNormalizedDistance) &&
-      approxEq(cellsToDraw[i+1].endNormalizedDistance, cellsToDraw[i+2].begNormalizedDistance) &&
-      approxEq(cellsToDraw[i+2].endNormalizedDistance, cellsToDraw[i+3].begNormalizedDistance)
-    ) {
-      cellsToDraw[i].endNormalizedDistance = cellsToDraw[i+3].endNormalizedDistance
-      cellsToDraw.splice(i+1, 3)
-    }
-    // Two cells ahead
-    else if (
-      i+2 < cellsToDraw.length && 
-      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+1].echoStrength) &&
-      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+2].echoStrength) &&
-      approxEq(cellsToDraw[i].endNormalizedDistance, cellsToDraw[i+1].begNormalizedDistance) &&
-      approxEq(cellsToDraw[i+1].endNormalizedDistance, cellsToDraw[i+2].begNormalizedDistance)
-    ) {
-      cellsToDraw[i].endNormalizedDistance = cellsToDraw[i+2].endNormalizedDistance
-      cellsToDraw.splice(i+1, 2)
-    }
-    // One cell ahead
-    else if (
-      i+1 < cellsToDraw.length &&
-      approxEq(cellsToDraw[i].echoStrength, cellsToDraw[i+1].echoStrength) &&
-      approxEq(cellsToDraw[i].endNormalizedDistance, cellsToDraw[i+1].begNormalizedDistance)
-    ) {
-      cellsToDraw[i].endNormalizedDistance = cellsToDraw[i+1].endNormalizedDistance
-      cellsToDraw.splice(i+1, 1)
-    }
-  }
-  */
 
   // Draw radar cells
   for (const cellToDraw of cellsToDraw) {
@@ -627,6 +559,5 @@ document.addEventListener('DOMContentLoaded', _ => {
       onASTERIX(m.data)
     }
   }
-  setupWS('ws://127.0.0.1:9090/ASTERIX/BINARY')
-  //getConfigAndThen(ConfigASTERIXWebSocketUrl, setupWS)
+  getConfigAndThen(ConfigASTERIXWebSocketUrl, setupWS)
 })
