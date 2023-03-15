@@ -13,5 +13,13 @@ Take a look at [the documentation](./docs/src/SUMMARY.md) or the [website](https
 ## Reference paper
 
 ```bibtex
-IN PEER REVIEW - MaCySTe: a virtual testbed for maritime cybersecurity - G. Longo, A. Orlich, S. Musante, A. Merlo, E. Russo
+@article{Longo2023,
+  doi = {10.2139/ssrn.4374685},
+  url = {https://doi.org/10.2139/ssrn.4374685},
+  year = {2023},
+  publisher = {Elsevier {BV}},
+  author = {Giacomo Longo and Alessandro Orlich and Stefano Musante and Alessio Merlo and Enrico Russo},
+  title = {{MaCySTe}: A Virtual Testbed for Maritime Cybersecurity},
+  journal = {{SSRN} Electronic Journal}
+}
 ```
