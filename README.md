@@ -14,12 +14,15 @@ Take a look at [the documentation](./docs/src/SUMMARY.md) or the [website](https
 
 ```bibtex
 @article{Longo2023,
-  doi = {10.2139/ssrn.4374685},
-  url = {https://doi.org/10.2139/ssrn.4374685},
+  doi = {10.1016/j.softx.2023.101426},
+  url = {https://doi.org/10.1016/j.softx.2023.101426},
   year = {2023},
+  month = jul,
   publisher = {Elsevier {BV}},
+  volume = {23},
+  pages = {101426},
   author = {Giacomo Longo and Alessandro Orlich and Stefano Musante and Alessio Merlo and Enrico Russo},
-  title = {{MaCySTe}: A Virtual Testbed for Maritime Cybersecurity},
-  journal = {{SSRN} Electronic Journal}
+  title = {{MaCySTe}: A virtual testbed for maritime cybersecurity},
+  journal = {{SoftwareX}}
 }
 ```
