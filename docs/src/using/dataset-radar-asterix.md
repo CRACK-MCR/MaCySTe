@@ -4,18 +4,18 @@ ASTERIX is a protocol for radar data exchange, MaCySTe can generate it according
 
 In the default configuration MaCySTe will send ASTERIX video to address `239.0.1.2` on port `8600`
 
-For more details on the protocol structure we refer the interested reader to section __2.E__ of [Attacking (and defending) the Maritime Radar System](https://doi.org/10.48550/arxiv.2207.05623)
+For more details on the protocol structure we refer the interested reader to section __2.E__ of [Attacking (and defending) the Maritime Radar System](https://doi.org/10.1109/tifs.2023.3282132)
 
 ```bibtex
-@misc{https://doi.org/10.48550/arxiv.2207.05623,
-  doi = {10.48550/ARXIV.2207.05623},
-  url = {https://arxiv.org/abs/2207.05623},
-  author = {Longo,  G. and Russo,  E. and Armando,  A. and Merlo,  A.},
-  keywords = {Cryptography and Security (cs.CR),  FOS: Computer and information sciences,  FOS: Computer and information sciences},
-  title = {Attacking (and defending) the Maritime Radar System},
-  publisher = {arXiv},
-  year = {2022},
-  copyright = {arXiv.org perpetual,  non-exclusive license}
+@article{Longo2023,
+  doi = {10.1109/tifs.2023.3282132},
+  url = {https://doi.org/10.1109/tifs.2023.3282132},
+  year = {2023},
+  publisher = {Institute of Electrical and Electronics Engineers ({IEEE})},
+  pages = {1--1},
+  author = {Giacomo Longo and Enrico Russo and Alessandro Armando and Alessio Merlo},
+  title = {Attacking (and Defending) the Maritime Radar System},
+  journal = {{IEEE} Transactions on Information Forensics and Security}
 }
 ```
 
