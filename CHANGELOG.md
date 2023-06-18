@@ -1,3 +1,8 @@
+# v1.1.2
+
+- Updated images to their latest versions
+- Dependency updates
+
 # v1.1.1
 
 - MaCySTe containers and book are now automatically build in Continuous Integration

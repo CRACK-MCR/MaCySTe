@@ -81,7 +81,7 @@ impl Listener {
       _ => todo!()
     };
     tracing::info!("Bound socket");
-    let mut recv_buffer = [0;65536];
+    let mut recv_buffer = [0;u16::MAX as usize];
     loop {
       tokio::select! {
         _ = cancellation_token.cancelled() => {

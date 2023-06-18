@@ -17,10 +17,10 @@ ifndef CI
 CONTAINER_BUILD_ARGS += --pull=newer
 endif
 
-CONTAINER_BUILD_ARGS += --build-arg FEDORA_IMAGE=registry.fedoraproject.org/fedora:37
-CONTAINER_BUILD_ARGS += --build-arg JAVASCRIPT_IMAGE=docker.io/library/node:19.4.0
-CONTAINER_BUILD_ARGS += --build-arg PYTHON_IMAGE=docker.io/library/python:3.11.1
-CONTAINER_BUILD_ARGS += --build-arg RUST_IMAGE=docker.io/library/rust:1.66.1
+CONTAINER_BUILD_ARGS += --build-arg FEDORA_IMAGE=registry.fedoraproject.org/fedora:38
+CONTAINER_BUILD_ARGS += --build-arg JAVASCRIPT_IMAGE=docker.io/library/node:20.3.0
+CONTAINER_BUILD_ARGS += --build-arg PYTHON_IMAGE=docker.io/library/python:3.11.4
+CONTAINER_BUILD_ARGS += --build-arg RUST_IMAGE=docker.io/library/rust:1.70
 
 CONTAINER_IMAGE_LABELS += \
 	it.unige.project=MaCySTe \
