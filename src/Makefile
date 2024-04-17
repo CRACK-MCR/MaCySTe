@@ -91,7 +91,7 @@ check:
 	$(call has_command,sysctl)
 	$(call has_command,tee)
 	$(call has_command,xdg-open)
-	@podman version --format '{{ .Client.Version }}' | python3 -c 'ver = input(""); cmp = ver.split(".", 3); assert int(cmp[0]) >= 4 and int(cmp[1]) >= 3, "Podman version " + ver + " is too old for MaCySTe (4.3+ is required)"; print("Podman version " + ver + " is ok")'
+	@podman version --format '{{ .Client.Version }}' | python3 -c 'ver = input(""); cmp = ver.split(".", 3); assert (int(cmp[0]) > 4) or (int(cmp[0]) == 4 and int(cmp[1]) >= 3), "Podman version " + ver + " is too old for MaCySTe (4.3+ is required)"; print("Podman version " + ver + " is ok")'
 	@python3 -c 'import sys; assert sys.version_info.major >= 3 and sys.version_info.minor >= 11, "Python version " + sys.version + " is too old for MaCySTe (3.11+ is required)"; print("Python version " + sys.version + " is ok")'
 
 up:
