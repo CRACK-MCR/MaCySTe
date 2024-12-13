@@ -1,4 +1,4 @@
-FROM docker.io/library/rust:1.66
+FROM docker.io/library/rust:1.71.1
 
 COPY . /usr/src/websocket-to-websocket
 
